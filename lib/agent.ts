@@ -54,7 +54,7 @@ export async function handleMessage(text: string, threadId: string): Promise<str
     tools: {
       save_order: {
         description: "Guardar un pedido cuando el cliente confirmó todos los datos necesarios (qué, dónde, cuándo)",
-        inputSchema: z.object({
+        parameters: z.object({
           items: z.string().describe("Qué hay que levantar (ej: lavarropas, heladera, fierros)"),
           address: z.string().describe("Dirección completa con número"),
           neighborhood: z.string().describe("Barrio de Montevideo"),
@@ -62,7 +62,7 @@ export async function handleMessage(text: string, threadId: string): Promise<str
           client_name: z.string().optional().describe("Nombre del cliente si lo proporcionó"),
           client_phone: z.string().optional().describe("Teléfono del cliente si lo proporcionó"),
         }),
-        run: async (params: {
+        execute: async (params: {
           items: string;
           address: string;
           neighborhood: string;
@@ -70,10 +70,15 @@ export async function handleMessage(text: string, threadId: string): Promise<str
           client_name?: string;
           client_phone?: string;
         }) => {
-          console.log("🔧 TOOL EJECUTADO - Guardando pedido:", params);
-          const order = await saveOrder(params, threadId);
-          console.log("✅ Pedido guardado con ID:", order.id);
-          return { success: true, order_id: order.id };
+          try {
+            console.log("🔧 TOOL EJECUTADO - Guardando pedido:", params);
+            const order = await saveOrder(params, threadId);
+            console.log("✅ Pedido guardado con ID:", order.id);
+            return { success: true, order_id: order.id };
+          } catch (error) {
+            console.error("❌ ERROR en tool execution:", error);
+            throw error;
+          }
         },
       },
     },
@@ -82,8 +87,11 @@ export async function handleMessage(text: string, threadId: string): Promise<str
 
   console.log("🤖 Response:", response);
   console.log("🔧 Tool calls:", toolCalls?.length || 0);
+  if (toolCalls && toolCalls.length > 0) {
+    console.log("🔧 Tool calls details:", JSON.stringify(toolCalls, null, 2));
+  }
   if (toolResults && toolResults.length > 0) {
-    console.log("📊 Tool results:", toolResults);
+    console.log("📊 Tool results:", JSON.stringify(toolResults, null, 2));
   }
 
   // Si el response está vacío (solo llamó al tool sin generar texto), generar confirmación
