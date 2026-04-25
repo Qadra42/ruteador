@@ -80,8 +80,15 @@ export async function handleMessage(text: string, threadId: string): Promise<str
       console.log("📦 Datos extraídos:", orderData);
 
       if (orderData.items && orderData.address && orderData.neighborhood) {
+        console.log("✅ Guardando pedido en KV...");
         const order = await saveOrder(orderData, threadId);
-        console.log("✅ Pedido guardado con ID:", order.id);
+        console.log("✅✅ Pedido guardado exitosamente con ID:", order.id);
+      } else {
+        console.log("⚠️ Faltan campos requeridos:", {
+          items: !!orderData.items,
+          address: !!orderData.address,
+          neighborhood: !!orderData.neighborhood
+        });
       }
     } catch (error) {
       console.error("❌ Error extrayendo datos del pedido:", error);
