@@ -21,6 +21,14 @@ export default function HomePage() {
                 <p className="text-gray-600 text-sm">
                   The conversational agent takes orders automatically
                 </p>
+                <a
+                  href="https://t.me/ruteador_bot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  → t.me/ruteador_bot
+                </a>
               </div>
             </div>
             <div className="flex items-start">
