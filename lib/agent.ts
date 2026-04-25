@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { generateText, tool } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { saveOrder, getConversationHistory, saveMessage } from "./orders";
@@ -52,7 +52,7 @@ export async function handleMessage(text: string, threadId: string): Promise<str
     messages: validHistory,
     maxSteps: 5, // Permitir múltiples rondas: llamar tool + generar respuesta
     tools: {
-      save_order: {
+      save_order: tool({
         description: "Guardar un pedido cuando el cliente confirmó todos los datos necesarios (qué, dónde, cuándo)",
         parameters: z.object({
           items: z.string().describe("Qué hay que levantar (ej: lavarropas, heladera, fierros)"),
@@ -62,23 +62,18 @@ export async function handleMessage(text: string, threadId: string): Promise<str
           client_name: z.string().optional().describe("Nombre del cliente si lo proporcionó"),
           client_phone: z.string().optional().describe("Teléfono del cliente si lo proporcionó"),
         }),
-      },
-    },
-    onStepFinish: async ({ toolCalls: stepToolCalls }) => {
-      // Ejecutar tools manualmente
-      if (stepToolCalls) {
-        for (const toolCall of stepToolCalls) {
-          if (toolCall.toolName === "save_order") {
-            try {
-              console.log("🔧 TOOL EJECUTADO - Guardando pedido:", toolCall.args);
-              const order = await saveOrder(toolCall.args as any, threadId);
-              console.log("✅ Pedido guardado con ID:", order.id);
-            } catch (error) {
-              console.error("❌ ERROR en tool execution:", error);
-            }
+        execute: async (params) => {
+          try {
+            console.log("🔧 TOOL EJECUTADO - Guardando pedido:", params);
+            const order = await saveOrder(params, threadId);
+            console.log("✅ Pedido guardado con ID:", order.id);
+            return { success: true, order_id: order.id };
+          } catch (error) {
+            console.error("❌ ERROR en tool execution:", error);
+            throw error;
           }
-        }
-      }
+        },
+      }),
     },
   });
 
