@@ -8,7 +8,7 @@ export default function HomePage() {
           🚛 Route Agent
         </h1>
         <p className="text-xl text-gray-700 mb-8">
-          Intelligent agent for scrap collection in Montevideo
+          Intelligent agent for junk removal in Montevideo
         </p>
 
         <div className="bg-white rounded-lg shadow-lg p-8 mb-8">

@@ -100,33 +100,41 @@ export function GenerateRouteButton({
   return (
     <div>
       <div className="flex items-center gap-4">
-        <div className="flex gap-3">
-          <label className="flex items-center gap-2 cursor-pointer">
+        <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+          <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-md transition-all ${
+            numDrivers === 1
+              ? "bg-white shadow-sm font-medium text-gray-900"
+              : "text-gray-600 hover:text-gray-900"
+          }`}>
             <input
               type="radio"
               value="1"
               checked={numDrivers === 1}
               onChange={() => setNumDrivers(1)}
-              className="w-4 h-4 text-blue-600"
+              className="sr-only"
             />
-            <span className="text-sm text-gray-700">1 Driver</span>
+            <span className="text-sm">1 Driver</span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-md transition-all ${
+            numDrivers === 2
+              ? "bg-white shadow-sm font-medium text-gray-900"
+              : "text-gray-600 hover:text-gray-900"
+          }`}>
             <input
               type="radio"
               value="2"
               checked={numDrivers === 2}
               onChange={() => setNumDrivers(2)}
-              className="w-4 h-4 text-blue-600"
+              className="sr-only"
             />
-            <span className="text-sm text-gray-700">2 Drivers</span>
+            <span className="text-sm">2 Drivers</span>
           </label>
         </div>
 
         <button
           onClick={handleGenerateRoute}
           disabled={disabled || loading || selectedOrderIds.length === 0}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium py-2 px-4 rounded transition-colors disabled:cursor-not-allowed"
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold py-2.5 px-6 rounded-lg transition-all disabled:cursor-not-allowed shadow-sm hover:shadow-md"
         >
           {loading ? "Generating..." : "Generate Route"}
         </button>
