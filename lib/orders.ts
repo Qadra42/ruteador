@@ -48,6 +48,11 @@ export async function saveMessage(
 }
 
 export async function getConversationHistory(threadId: string): Promise<any[]> {
-  const messages = (await kv.lrange(`conversation:${threadId}`, 0, -1)) as string[];
-  return messages.map((m) => JSON.parse(m));
+  const messages = (await kv.lrange(`conversation:${threadId}`, 0, -1)) as any[];
+  return messages.map((m) => {
+    // Si ya es un objeto, devolverlo directamente
+    if (typeof m === "object") return m;
+    // Si es string, parsearlo
+    return JSON.parse(m as string);
+  });
 }
