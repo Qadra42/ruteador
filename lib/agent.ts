@@ -46,50 +46,43 @@ export async function handleMessage(text: string, threadId: string): Promise<str
 
   console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
-  const { text: response, toolCalls, toolResults } = await generateText({
+  const { text: response } = await generateText({
     model: anthropic("claude-sonnet-4-5-20250929"),
-    system: SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT + `\n\nCuando tengas toda la información, devolvé SOLO el texto de confirmación al cliente. NO llames a ninguna función.`,
     messages: validHistory,
-    maxSteps: 5, // Permitir múltiples rondas: llamar tool + generar respuesta
-    tools: {
-      save_order: tool({
-        description: "Guardar un pedido cuando el cliente confirmó todos los datos necesarios (qué, dónde, cuándo)",
-        parameters: z.object({
-          items: z.string().describe("Qué hay que levantar (ej: lavarropas, heladera, fierros)"),
-          address: z.string().describe("Dirección completa con número"),
-          neighborhood: z.string().describe("Barrio de Montevideo"),
-          preferred_date: z.string().describe("Fecha preferida, formato YYYY-MM-DD o 'lo antes posible'"),
-          client_name: z.string().optional().describe("Nombre del cliente si lo proporcionó"),
-          client_phone: z.string().optional().describe("Teléfono del cliente si lo proporcionó"),
-        }),
-        execute: async (params) => {
-          try {
-            console.log("🔧 TOOL EJECUTADO - Guardando pedido:", params);
-            const order = await saveOrder(params, threadId);
-            console.log("✅ Pedido guardado con ID:", order.id);
-            return { success: true, order_id: order.id };
-          } catch (error) {
-            console.error("❌ ERROR en tool execution:", error);
-            throw error;
-          }
-        },
-      }),
-    },
   });
 
   console.log("🤖 Response:", response);
-  console.log("🔧 Tool calls:", toolCalls?.length || 0);
-  if (toolCalls && toolCalls.length > 0) {
-    console.log("🔧 Tool calls details:", JSON.stringify(toolCalls, null, 2));
-  }
-  if (toolResults && toolResults.length > 0) {
-    console.log("📊 Tool results:", JSON.stringify(toolResults, null, 2));
-  }
 
-  // Si el response está vacío (solo llamó al tool sin generar texto), generar confirmación
-  const finalResponse = response || "Listo, pedido anotado. Te confirmamos la hora por acá. ¡Gracias!";
+  // Si la respuesta contiene "Confirmo tu pedido" o "Agendado", extraer datos y guardar
+  if (response.includes("Confirmo") || response.includes("Agendado") || response.includes("pedido")) {
+    // Extraer información del historial (últimos mensajes del usuario)
+    const userMessages = validHistory.filter((m: any) => m.role === "user");
+    const lastMessages = userMessages.slice(-4).map((m: any) => m.content).join(" ");
+
+    console.log("🔍 Detecté confirmación de pedido, buscando datos en:", lastMessages);
+
+    // Intentar parsear los datos de la conversación
+    try {
+      const extractionResponse = await generateText({
+        model: anthropic("claude-sonnet-4-5-20250929"),
+        system: `Extrae los datos del pedido de esta conversación y devuelve un JSON con: items, address, neighborhood, preferred_date, client_name (opcional), client_phone (opcional). Si no encontrás algo, omitilo.`,
+        prompt: lastMessages,
+      });
+
+      const orderData = JSON.parse(extractionResponse.text);
+      console.log("📦 Datos extraídos:", orderData);
+
+      if (orderData.items && orderData.address && orderData.neighborhood) {
+        const order = await saveOrder(orderData, threadId);
+        console.log("✅ Pedido guardado con ID:", order.id);
+      }
+    } catch (error) {
+      console.error("❌ Error extrayendo datos del pedido:", error);
+    }
+  }
 
   // Guardar respuesta del agente en historial
-  await saveMessage(threadId, "assistant", finalResponse);
-  return finalResponse;
+  await saveMessage(threadId, "assistant", response);
+  return response;
 }
