@@ -19,12 +19,20 @@ export async function saveOrder(
 }
 
 export async function getPendingOrders(): Promise<Order[]> {
-  // Código original - pedidos reales de KV
-  const ids = (await kv.smembers("orders:pending")) as string[];
+  // Código original - pedidos reales de KV (pending + routed)
+  const pendingIds = (await kv.smembers("orders:pending")) as string[];
+  const routedIds = (await kv.smembers("orders:routed")) as string[];
+
+  const allIds = [...pendingIds, ...routedIds];
+
   const orders = await Promise.all(
-    ids.map((id) => kv.hgetall(`order:${id}`))
+    allIds.map((id) => kv.hgetall(`order:${id}`))
   );
-  return orders.filter(Boolean) as Order[];
+
+  // Ordenar por fecha de creación (más reciente primero)
+  return (orders.filter(Boolean) as Order[]).sort((a, b) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   // Datos de prueba hardcodeados - TEMPORAL PARA DESARROLLO (comentado)
   /*
