@@ -62,27 +62,24 @@ export async function handleMessage(text: string, threadId: string): Promise<str
           client_name: z.string().optional().describe("Nombre del cliente si lo proporcionó"),
           client_phone: z.string().optional().describe("Teléfono del cliente si lo proporcionó"),
         }),
-        execute: async (params: {
-          items: string;
-          address: string;
-          neighborhood: string;
-          preferred_date: string;
-          client_name?: string;
-          client_phone?: string;
-        }) => {
-          try {
-            console.log("🔧 TOOL EJECUTADO - Guardando pedido:", params);
-            const order = await saveOrder(params, threadId);
-            console.log("✅ Pedido guardado con ID:", order.id);
-            return { success: true, order_id: order.id };
-          } catch (error) {
-            console.error("❌ ERROR en tool execution:", error);
-            throw error;
-          }
-        },
       },
     },
-    toolChoice: "auto",
+    onStepFinish: async ({ toolCalls: stepToolCalls }) => {
+      // Ejecutar tools manualmente
+      if (stepToolCalls) {
+        for (const toolCall of stepToolCalls) {
+          if (toolCall.toolName === "save_order") {
+            try {
+              console.log("🔧 TOOL EJECUTADO - Guardando pedido:", toolCall.args);
+              const order = await saveOrder(toolCall.args as any, threadId);
+              console.log("✅ Pedido guardado con ID:", order.id);
+            } catch (error) {
+              console.error("❌ ERROR en tool execution:", error);
+            }
+          }
+        }
+      }
+    },
   });
 
   console.log("🤖 Response:", response);
