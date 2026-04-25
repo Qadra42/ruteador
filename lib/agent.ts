@@ -47,6 +47,7 @@ export async function handleMessage(text: string, threadId: string): Promise<str
     model: anthropic("claude-haiku-4-5-20251001"),
     system: SYSTEM_PROMPT,
     messages: history,
+    maxSteps: 5, // Permitir múltiples rondas: llamar tool + generar respuesta
     tools: {
       save_order: {
         description: "Guardar un pedido cuando el cliente confirmó todos los datos necesarios (qué, dónde, cuándo)",
@@ -82,7 +83,10 @@ export async function handleMessage(text: string, threadId: string): Promise<str
     console.log("📊 Tool results:", toolResults);
   }
 
+  // Si el response está vacío (solo llamó al tool sin generar texto), generar confirmación
+  const finalResponse = response || "Listo, pedido anotado. Te confirmamos la hora por acá. ¡Gracias!";
+
   // Guardar respuesta del agente en historial
-  await saveMessage(threadId, "assistant", response);
-  return response;
+  await saveMessage(threadId, "assistant", finalResponse);
+  return finalResponse;
 }
