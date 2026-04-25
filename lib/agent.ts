@@ -66,11 +66,17 @@ export async function handleMessage(text: string, threadId: string): Promise<str
     try {
       const extractionResponse = await generateText({
         model: anthropic("claude-sonnet-4-5-20250929"),
-        system: `Extrae los datos del pedido de esta conversación y devuelve un JSON con: items, address, neighborhood, preferred_date, client_name (opcional), client_phone (opcional). Si no encontrás algo, omitilo.`,
+        system: `Sos un extractor de datos. Analizá la conversación y devolvé SOLO un objeto JSON válido (sin markdown, sin explicaciones) con estos campos: items, address, neighborhood, preferred_date, client_name, client_phone. Ejemplo: {"items":"heladera","address":"Rivera 1500","neighborhood":"La Comercial","preferred_date":"martes","client_name":"Roberto","client_phone":"099123456"}`,
         prompt: lastMessages,
       });
 
-      const orderData = JSON.parse(extractionResponse.text);
+      // Limpiar posibles marcas de markdown
+      let jsonText = extractionResponse.text.trim();
+      if (jsonText.startsWith("```")) {
+        jsonText = jsonText.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+      }
+
+      const orderData = JSON.parse(jsonText);
       console.log("📦 Datos extraídos:", orderData);
 
       if (orderData.items && orderData.address && orderData.neighborhood) {
