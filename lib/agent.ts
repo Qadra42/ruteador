@@ -47,7 +47,7 @@ export async function handleMessage(text: string, threadId: string): Promise<str
   console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
   const { text: response, toolCalls, toolResults } = await generateText({
-    model: anthropic("claude-haiku-4-5-20251001"),
+    model: anthropic("claude-sonnet-4-5-20250929"),
     system: SYSTEM_PROMPT,
     messages: validHistory,
     maxSteps: 5, // Permitir múltiples rondas: llamar tool + generar respuesta
