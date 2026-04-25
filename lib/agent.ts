@@ -37,7 +37,7 @@ export async function handleMessage(text: string, threadId: string): Promise<str
   const history = await getConversationHistory(threadId);
 
   const { text: response, toolCalls, toolResults } = await generateText({
-    model: anthropic("claude-3-5-sonnet-20241022"),
+    model: anthropic("claude-haiku-4-5-20251001"),
     system: SYSTEM_PROMPT,
     messages: history,
     tools: {
