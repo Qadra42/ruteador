@@ -1,56 +1,56 @@
 # 🚛 Route Agent
 
-Agente inteligente de Telegram para gestión de pedidos y optimización de rutas de recolección de chatarra en Montevideo, Uruguay.
+Intelligent Telegram agent for order management and route optimization for scrap collection in Montevideo, Uruguay.
 
-Construido para la hackathon **"Zero to Agent"** de Vercel (Track 3: ChatSDK Agents).
+Built for Vercel's **"Zero to Agent"** hackathon (Track 3: ChatSDK Agents).
 
-## 🎯 Características
+## 🎯 Features
 
-- **Bot de Telegram conversacional**: Atiende clientes y toma pedidos automáticamente usando Vercel AI SDK
-- **Almacenamiento en Vercel KV**: Guarda pedidos y conversaciones
-- **Optimización de rutas**: Genera rutas óptimas usando nearest-neighbor heuristic
-- **Integración con Google Maps**: Links directos para el chofer
-- **Dashboard web**: Visualiza pedidos y genera rutas con un clic
-- **Notificaciones al chofer**: Envía la ruta del día por Telegram automáticamente
+- **Conversational Telegram bot**: Serves clients and takes orders automatically using Vercel AI SDK
+- **Vercel KV storage**: Saves orders and conversations
+- **Route optimization**: Generates optimal routes using nearest-neighbor heuristic
+- **Google Maps integration**: Direct links for the driver
+- **Web dashboard**: Visualize orders and generate routes with one click
+- **Driver notifications**: Sends the day's route via Telegram automatically
 
-## 🏗️ Stack Tecnológico
+## 🏗️ Tech Stack
 
 - **Next.js 15** (App Router) — Framework
-- **ChatSDK** (`chat` + `@chat-adapter/telegram`) — Bot de Telegram
-- **Vercel AI SDK** (`ai` + `@ai-sdk/anthropic`) — Agente conversacional
-- **Claude 3.5 Haiku** — Modelo de IA de Anthropic
-- **Vercel KV** — Almacenamiento de pedidos
-- **TypeScript** — Lenguaje
-- **Tailwind CSS** — Estilos
-- **Bun** — Runtime y package manager
+- **ChatSDK** (`chat` + `@chat-adapter/telegram`) — Telegram bot
+- **Vercel AI SDK** (`ai` + `@ai-sdk/anthropic`) — Conversational agent
+- **Claude 3.5 Haiku** — Anthropic's AI model
+- **Vercel KV** — Order storage
+- **TypeScript** — Language
+- **Tailwind CSS** — Styling
+- **Bun** — Runtime and package manager
 
 ## 🚀 Setup
 
-### 1. Crear bot de Telegram
+### 1. Create Telegram bot
 
-Habla con [@BotFather](https://t.me/botfather) en Telegram:
+Talk to [@BotFather](https://t.me/botfather) on Telegram:
 
 ```
 /newbot
 ```
 
-Guarda el token que te da.
+Save the token it gives you.
 
-### 2. Obtener Chat ID del chofer
+### 2. Get driver's Chat ID
 
-Opción 1: Usa este bot temporal: [@userinfobot](https://t.me/userinfobot)
+Option 1: Use this temporary bot: [@userinfobot](https://t.me/userinfobot)
 
-Opción 2: Deployá el proyecto, hace que el chofer envíe `/start` al bot, y revisá los logs de Vercel para ver el `chat_id`.
+Option 2: Deploy the project, have the driver send `/start` to the bot, and check Vercel logs to see the `chat_id`.
 
-### 3. Configurar variables de entorno
+### 3. Configure environment variables
 
-Copia `.env.example` a `.env.local`:
+Copy `.env.example` to `.env.local`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Completa con tus credenciales:
+Fill in with your credentials:
 
 ```env
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
@@ -58,9 +58,9 @@ DRIVER_TELEGRAM_CHAT_ID=123456789
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Obtené tu API key de Anthropic en: https://console.anthropic.com/settings/keys
+Get your Anthropic API key at: https://console.anthropic.com/settings/keys
 
-### 4. Instalar dependencias
+### 4. Install dependencies
 
 ```bash
 bun install
@@ -68,109 +68,109 @@ bun install
 
 ### 5. Setup Vercel KV
 
-Para desarrollo local:
-- Crea un proyecto en Vercel
-- Agrega Vercel KV Storage desde la pestaña Storage
-- Corre `vercel env pull .env.local` para bajar las credenciales de KV
+For local development:
+- Create a project on Vercel
+- Add Vercel KV Storage from the Storage tab
+- Run `vercel env pull .env.local` to download KV credentials
 
-Para producción:
-- Las variables de KV se configuran automáticamente al deployar
+For production:
+- KV variables are configured automatically on deploy
 
-### 6. Correr en desarrollo
+### 6. Run in development
 
 ```bash
 bun run dev
 ```
 
-El servidor corre en `http://localhost:3000`
+The server runs on `http://localhost:3000`
 
-### 7. Deploy a Vercel
+### 7. Deploy to Vercel
 
 ```bash
 bunx vercel
 ```
 
-Después del deploy, configura el webhook de Telegram:
+After deployment, configure the Telegram webhook:
 
 ```bash
 curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://TU-DOMINIO.vercel.app/api/webhooks/telegram"}'
+  -d '{"url": "https://YOUR-DOMAIN.vercel.app/api/webhooks/telegram"}'
 ```
 
-## 📱 Uso
+## 📱 Usage
 
-### Para clientes
+### For clients
 
-Busca tu bot en Telegram y envía un mensaje:
+Find your bot on Telegram and send a message:
 
 ```
-Hola tengo un lavarropas viejo para sacar
+Hi, I have an old washing machine to get rid of
 ```
 
-El agente te va a guiar para tomar el pedido.
+The agent will guide you through placing the order.
 
-### Para el dueño del negocio
+### For the business owner
 
-1. Abre `https://tu-dominio.vercel.app/dashboard`
-2. Ve los pedidos pendientes
-3. Hace clic en "Generar Ruta del Día"
-4. El chofer recibe la ruta optimizada por Telegram con link de Google Maps
+1. Open `https://your-domain.vercel.app/dashboard`
+2. View pending orders
+3. Click "Generate Route"
+4. The driver receives the optimized route via Telegram with a Google Maps link
 
-## 🗺️ Cómo funciona la optimización de rutas
+## 🗺️ How route optimization works
 
-El sistema usa **nearest-neighbor heuristic**:
+The system uses **nearest-neighbor heuristic**:
 
-1. Empieza desde el depósito (Centro/Aguada)
-2. Va a la parada más cercana
-3. Desde ahí, va a la siguiente más cercana
-4. Repite hasta completar todas las paradas
-5. Genera un link de Google Maps con todas las paradas en orden
+1. Starts from the depot (Centro/Aguada)
+2. Goes to the nearest stop
+3. From there, goes to the next nearest
+4. Repeats until all stops are complete
+5. Generates a Google Maps link with all stops in order
 
-Los barrios tienen coordenadas hardcodeadas para calcular distancias aproximadas.
+Neighborhoods have hardcoded coordinates to calculate approximate distances.
 
-## 📂 Estructura del proyecto
+## 📂 Project structure
 
 ```
 route-agent/
 ├── app/
 │   ├── api/
-│   │   ├── webhooks/telegram/route.ts   # Webhook de Telegram
-│   │   └── generate-route/route.ts      # Genera y envía rutas
+│   │   ├── webhooks/telegram/route.ts   # Telegram webhook
+│   │   └── generate-route/route.ts      # Generate and send routes
 │   ├── dashboard/
-│   │   ├── page.tsx                     # Dashboard del dueño
+│   │   ├── page.tsx                     # Owner's dashboard
 │   │   └── GenerateRouteButton.tsx      # Client component
 │   └── page.tsx                         # Landing page
 ├── lib/
-│   ├── types.ts                         # Tipos y schemas Zod
-│   ├── orders.ts                        # CRUD de pedidos en KV
-│   ├── route-optimizer.ts               # Lógica de optimización
-│   ├── agent.ts                         # Agente con AI SDK
-│   └── bot.ts                           # Configuración ChatSDK
-└── .env.local                           # Variables de entorno
+│   ├── types.ts                         # Types and Zod schemas
+│   ├── orders.ts                        # Order CRUD in KV
+│   ├── route-optimizer.ts               # Optimization logic
+│   ├── agent.ts                         # Agent with AI SDK
+│   └── bot.ts                           # ChatSDK configuration
+└── .env.local                           # Environment variables
 ```
 
-## 🎓 Aprendizajes de la hackathon
+## 🎓 Hackathon learnings
 
-- ChatSDK hace súper fácil crear bots multicanal
-- Vercel AI SDK con tools es perfecto para extraer info estructurada de conversaciones
-- Vercel KV es ideal para prototipado rápido
-- El webhook de Telegram tiene timeout de 60s, usar `claude-3-5-haiku` es ideal: rápido, barato y muy capaz
-- Claude es excelente para conversaciones en español rioplatense, entiende perfectamente el contexto uruguayo
+- ChatSDK makes it super easy to create multi-channel bots
+- Vercel AI SDK with tools is perfect for extracting structured info from conversations
+- Vercel KV is ideal for rapid prototyping
+- Telegram webhook has a 60s timeout, using `claude-3-5-haiku` is ideal: fast, cheap, and very capable
+- Claude is excellent for conversations in Rioplatense Spanish, perfectly understands Uruguayan context
 
-## 📝 TODOs para producción
+## 📝 TODOs for production
 
-- [ ] Autenticación en el dashboard
-- [ ] Mejores algoritmos de optimización (TSP solvers)
-- [ ] Geocoding real en vez de coordenadas hardcodeadas
-- [ ] Confirmación de pedidos por parte del chofer
-- [ ] Tracking en tiempo real
-- [ ] Analytics de rendimiento
+- [ ] Dashboard authentication
+- [ ] Better optimization algorithms (TSP solvers)
+- [ ] Real geocoding instead of hardcoded coordinates
+- [ ] Order confirmation by driver
+- [ ] Real-time tracking
+- [ ] Performance analytics
 
-## 📄 Licencia
+## 📄 License
 
 MIT
 
-## 🙏 Créditos
+## 🙏 Credits
 
-Construido por Francisco para la hackathon "Zero to Agent" de Vercel.
+Built by Francisco for Vercel's "Zero to Agent" hackathon.

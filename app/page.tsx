@@ -8,36 +8,36 @@ export default function HomePage() {
           🚛 Route Agent
         </h1>
         <p className="text-xl text-gray-700 mb-8">
-          Agente inteligente para recolección de chatarra en Montevideo
+          Intelligent agent for scrap collection in Montevideo
         </p>
 
         <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-semibold mb-4">¿Cómo funciona?</h2>
+          <h2 className="text-2xl font-semibold mb-4">How does it work?</h2>
           <div className="space-y-4 text-left">
             <div className="flex items-start">
               <span className="text-2xl mr-3">💬</span>
               <div>
-                <h3 className="font-semibold">Clientes envían pedidos por Telegram</h3>
+                <h3 className="font-semibold">Clients send orders via Telegram</h3>
                 <p className="text-gray-600 text-sm">
-                  El agente conversacional toma los pedidos automáticamente
+                  The conversational agent takes orders automatically
                 </p>
               </div>
             </div>
             <div className="flex items-start">
               <span className="text-2xl mr-3">📋</span>
               <div>
-                <h3 className="font-semibold">Dashboard para el dueño</h3>
+                <h3 className="font-semibold">Dashboard for the owner</h3>
                 <p className="text-gray-600 text-sm">
-                  Visualiza todos los pedidos pendientes en tiempo real
+                  View all pending orders in real-time
                 </p>
               </div>
             </div>
             <div className="flex items-start">
               <span className="text-2xl mr-3">🗺️</span>
               <div>
-                <h3 className="font-semibold">Generación de rutas optimizadas</h3>
+                <h3 className="font-semibold">Optimized route generation</h3>
                 <p className="text-gray-600 text-sm">
-                  Crea la mejor ruta con Google Maps y se la envía al chofer
+                  Creates the best route with Google Maps and sends it to the driver
                 </p>
               </div>
             </div>
@@ -48,12 +48,12 @@ export default function HomePage() {
           href="/dashboard"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-lg transition-colors"
         >
-          Ver Dashboard
+          View Dashboard
         </Link>
 
         <div className="mt-8 text-sm text-gray-600">
-          <p>Construido con Next.js 15, Vercel AI SDK, y ChatSDK</p>
-          <p className="mt-1">Para la hackathon "Zero to Agent" de Vercel</p>
+          <p>Built with Next.js 15, Vercel AI SDK, and ChatSDK</p>
+          <p className="mt-1">For Vercel's "Zero to Agent" hackathon</p>
         </div>
       </div>
     </div>

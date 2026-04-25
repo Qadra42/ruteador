@@ -12,7 +12,6 @@ export default function DashboardPage() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  // Cargar pedidos al montar
   useEffect(() => {
     fetch("/api/orders")
       .then((res) => res.json())
@@ -26,35 +25,30 @@ export default function DashboardPage() {
       });
   }, []);
 
-  // Filtrar pedidos según tab activo
   const filteredOrders = orders.filter((order) => {
+    if (order.status !== "pending") return false;
     const preferredLower = order.preferred_date.toLowerCase();
     if (selectedTab === "hoy") {
-      return preferredLower.includes("hoy") || preferredLower.includes("tarde");
+      return preferredLower.includes("hoy") || preferredLower.includes("today") || preferredLower.includes("tarde") || preferredLower.includes("afternoon");
     } else if (selectedTab === "mañana") {
-      return (
-        preferredLower.includes("mañana") || preferredLower.includes("temprano")
-      );
+      return preferredLower.includes("mañana") || preferredLower.includes("tomorrow") || preferredLower.includes("temprano") || preferredLower.includes("morning");
     }
-    return true; // "todos"
+    return true;
   });
 
-  // Contar pedidos por tab
+  const pendingOrders = orders.filter((o) => o.status === "pending");
   const countByTab = {
-    hoy: orders.filter(
-      (o) =>
-        o.preferred_date.toLowerCase().includes("hoy") ||
-        o.preferred_date.toLowerCase().includes("tarde")
-    ).length,
-    mañana: orders.filter(
-      (o) =>
-        o.preferred_date.toLowerCase().includes("mañana") ||
-        o.preferred_date.toLowerCase().includes("temprano")
-    ).length,
-    todos: orders.length,
+    hoy: pendingOrders.filter((o) => {
+      const p = o.preferred_date.toLowerCase();
+      return p.includes("hoy") || p.includes("today") || p.includes("tarde") || p.includes("afternoon");
+    }).length,
+    mañana: pendingOrders.filter((o) => {
+      const p = o.preferred_date.toLowerCase();
+      return p.includes("mañana") || p.includes("tomorrow") || p.includes("temprano") || p.includes("morning");
+    }).length,
+    todos: pendingOrders.length,
   };
 
-  // Toggle selección de un pedido
   const toggleOrderSelection = (orderId: string) => {
     const newSelected = new Set(selectedOrders);
     if (newSelected.has(orderId)) {
@@ -65,23 +59,13 @@ export default function DashboardPage() {
     setSelectedOrders(newSelected);
   };
 
-  // Seleccionar/deseleccionar todos los filtrados
-  const toggleSelectAll = () => {
-    const filteredIds = filteredOrders.map((o) => o.id);
-    const allSelected = filteredIds.every((id) => selectedOrders.has(id));
-
-    if (allSelected) {
-      // Deseleccionar todos los filtrados
-      const newSelected = new Set(selectedOrders);
-      filteredIds.forEach((id) => newSelected.delete(id));
-      setSelectedOrders(newSelected);
-    } else {
-      // Seleccionar todos los filtrados
-      const newSelected = new Set(selectedOrders);
-      filteredIds.forEach((id) => newSelected.add(id));
-      setSelectedOrders(newSelected);
-    }
+  const selectAllFiltered = () => {
+    const newSelected = new Set(selectedOrders);
+    filteredOrders.forEach((o) => newSelected.add(o.id));
+    setSelectedOrders(newSelected);
   };
+
+  const clearSelection = () => setSelectedOrders(new Set());
 
   const allFilteredSelected =
     filteredOrders.length > 0 &&
@@ -90,178 +74,181 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <p className="text-gray-600">Cargando pedidos...</p>
+        <p className="text-gray-600">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Brand header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Dashboard - Pedidos Pendientes
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            Route Agent
           </h1>
+          <p className="text-sm text-gray-500">
+            Smart delivery routing
+          </p>
+        </div>
 
-          {/* Tabs de filtro */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setSelectedTab("hoy")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedTab === "hoy"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Hoy ({countByTab.hoy})
-            </button>
-            <button
-              onClick={() => setSelectedTab("mañana")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedTab === "mañana"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Mañana ({countByTab.mañana})
-            </button>
-            <button
-              onClick={() => setSelectedTab("todos")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedTab === "todos"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              Todos ({countByTab.todos})
-            </button>
+        {/* Stats */}
+        <div className="mb-6">
+          <p className="text-sm text-gray-500">
+            {pendingOrders.length} {pendingOrders.length === 1 ? "order" : "orders"} · {selectedOrders.size} selected
+          </p>
+        </div>
+
+        {/* Tabs minimalistas */}
+        <div className="flex gap-1 mb-4 border-b border-gray-200">
+          <button
+            onClick={() => setSelectedTab("hoy")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              selectedTab === "hoy"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Today ({countByTab.hoy})
+          </button>
+          <button
+            onClick={() => setSelectedTab("mañana")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              selectedTab === "mañana"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Tomorrow ({countByTab.mañana})
+          </button>
+          <button
+            onClick={() => setSelectedTab("todos")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              selectedTab === "todos"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            All ({countByTab.todos})
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex gap-2">
+              <button
+                onClick={selectAllFiltered}
+                disabled={filteredOrders.length === 0}
+                className="text-xs text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+              >
+                Select all
+              </button>
+              <span className="text-gray-300">·</span>
+              <button
+                onClick={clearSelection}
+                disabled={selectedOrders.size === 0}
+                className="text-xs text-gray-600 hover:text-gray-700 disabled:text-gray-400"
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
-          {/* Mensaje de selección */}
-          <p className="text-gray-600 mb-4">
-            {selectedOrders.size > 0 ? (
-              <span className="font-semibold text-blue-600">
-                {selectedOrders.size}{" "}
-                {selectedOrders.size === 1
-                  ? "pedido seleccionado"
-                  : "pedidos seleccionados"}
-              </span>
-            ) : (
-              <span>Seleccioná pedidos para generar la ruta</span>
-            )}
-          </p>
-
-          {/* Botón de generación */}
           <GenerateRouteButton
             disabled={selectedOrders.size === 0}
             selectedOrderIds={Array.from(selectedOrders)}
           />
         </div>
 
+        {/* Order list */}
         {filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500 text-lg">
-              No hay pedidos en esta categoría.
-            </p>
+          <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+            <p className="text-gray-500">No orders in this category</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left">
+                  <th className="w-10 px-3 py-2">
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
-                      onChange={toggleSelectAll}
-                      className="w-4 h-4 cursor-pointer"
+                      onChange={selectAllFiltered}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Client
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hora
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Address
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Items
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dirección
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    When
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Barrio
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Qué levantar
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha preferida
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Time
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className={
-                      selectedOrders.has(order.id) ? "bg-blue-50" : ""
-                    }
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedOrders.has(order.id)}
-                        onChange={() => toggleOrderSelection(order.id)}
-                        disabled={order.status === "routed" || order.status === "completed"}
-                        className="w-4 h-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {order.status === "pending" && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                          Pendiente
-                        </span>
-                      )}
-                      {order.status === "routed" && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          Rutado
-                        </span>
-                      )}
-                      {order.status === "completed" && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          Completado
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(order.created_at).toLocaleTimeString("es-UY", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.client_name || "Sin nombre"}
-                      {order.client_phone && (
-                        <div className="text-xs text-gray-500">
-                          {order.client_phone}
+                {filteredOrders.map((order) => {
+                  const isSelected = selectedOrders.has(order.id);
+                  return (
+                    <tr
+                      key={order.id}
+                      onClick={() => toggleOrderSelection(order.id)}
+                      className={`cursor-pointer hover:bg-gray-50 ${
+                        isSelected ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleOrderSelection(order.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="text-sm font-medium text-gray-900">
+                          {order.client_name || "No name"}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.address}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.neighborhood}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.items}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.preferred_date}
-                    </td>
-                  </tr>
-                ))}
+                        {order.client_phone && (
+                          <div className="text-xs text-gray-500">
+                            {order.client_phone}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="text-sm text-gray-900">
+                          {order.address}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {order.neighborhood}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-sm text-gray-600">
+                        {order.items}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-gray-600">
+                        {order.preferred_date}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-500">
+                        {new Date(order.created_at).toLocaleTimeString("es-UY", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -21,7 +21,7 @@ export function getBot(): Chat {
         await thread.post(response);
       } catch (error) {
         console.error("Error handling message:", error);
-        await thread.post("Disculpá, tuve un problema técnico. ¿Podés intentar de nuevo?");
+        await thread.post("Sorry, I had a technical issue. Can you try again?");
       }
     });
   }

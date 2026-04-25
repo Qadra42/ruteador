@@ -8,7 +8,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching orders:", error);
     return NextResponse.json(
-      { error: "Error al cargar pedidos" },
+      { error: "Error loading orders" },
       { status: 500 }
     );
   }
