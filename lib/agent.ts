@@ -11,12 +11,16 @@ Cuando un cliente te escribe, tenés que obtener:
 3. Qué día prefieren (si no dicen, asumir "lo antes posible")
 4. Un nombre o teléfono de contacto (opcional, pedirlo amablemente)
 
+IMPORTANTE - MUY IMPORTANTE:
+- Cuando tengas TODA la información (qué, dónde, cuándo), DEBES llamar a la función save_order ANTES de confirmar el pedido al cliente.
+- NO digas "Anotado", "Agendado", "Confirmo tu pedido" o similar HASTA QUE HAYAS LLAMADO a save_order.
+- Primero llamá a save_order con todos los datos, DESPUÉS confirmá al cliente.
+
 Reglas:
 - Hablás en español rioplatense, informal pero profesional. Usá "vos" en vez de "tú".
 - Sé breve. Mensajes cortos como en WhatsApp, no ensayos.
-- Si el cliente te da toda la info de una, confirmá el pedido directo sin hacer preguntas innecesarias.
+- Si el cliente te da toda la info de una, llamá a save_order y confirmá el pedido directo.
 - Si falta info, preguntá UNA cosa a la vez.
-- Cuando tengas toda la info, confirmá el pedido con un resumen claro y decí que se van a comunicar para confirmar la hora exacta.
 - Solo atendés pedidos dentro de Montevideo y zona metropolitana.
 - Si alguien pregunta precios, decí que depende del volumen y que lo coordinan cuando pasen.
 - Si alguien pregunta algo no relacionado al servicio, redirigí amablemente.
@@ -27,14 +31,17 @@ Vos: "¡Hola! Dale, te lo sacamos. ¿En qué dirección estás?"
 Cliente: "Benito Blanco 1340, Pocitos"
 Vos: "Perfecto. ¿Qué día te queda bien?"
 Cliente: "Mañana si puede ser"
-Vos: "Listo, te agendo para mañana. Pasamos por Benito Blanco 1340, Pocitos, a retirar un lavarropas. Te confirmamos la hora por acá. ¿Un nombre para el pedido?"
+Vos: "Listo. ¿Un nombre para el pedido?"
 Cliente: "Juan"
-Vos: "Anotado Juan. Quedás agendado. ¡Gracias!"`;
+Vos: [LLAMA A save_order con items="lavarropas", address="Benito Blanco 1340", neighborhood="Pocitos", preferred_date="mañana", client_name="Juan"]
+Vos: "Anotado Juan. Quedás agendado para mañana - te pasamos a levantar el lavarropas en Benito Blanco 1340. Te confirmamos la hora. ¡Gracias!"`;
 
 export async function handleMessage(text: string, threadId: string): Promise<string> {
   // Guardar mensaje del usuario en historial
   await saveMessage(threadId, "user", text);
   const history = await getConversationHistory(threadId);
+
+  console.log("📝 History length:", history.length);
 
   const { text: response, toolCalls, toolResults } = await generateText({
     model: anthropic("claude-haiku-4-5-20251001"),
@@ -59,13 +66,21 @@ export async function handleMessage(text: string, threadId: string): Promise<str
           client_name?: string;
           client_phone?: string;
         }) => {
+          console.log("🔧 TOOL EJECUTADO - Guardando pedido:", params);
           const order = await saveOrder(params, threadId);
+          console.log("✅ Pedido guardado con ID:", order.id);
           return { success: true, order_id: order.id };
         },
       },
     },
     toolChoice: "auto",
   });
+
+  console.log("🤖 Response:", response);
+  console.log("🔧 Tool calls:", toolCalls?.length || 0);
+  if (toolResults && toolResults.length > 0) {
+    console.log("📊 Tool results:", toolResults);
+  }
 
   // Guardar respuesta del agente en historial
   await saveMessage(threadId, "assistant", response);
