@@ -3,99 +3,99 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { saveOrder, getConversationHistory, saveMessage } from "./orders";
 
-const SYSTEM_PROMPT = `Sos un asistente de una empresa de recolección de chatarra y residuos voluminosos en Montevideo, Uruguay. Tu trabajo es tomar pedidos de clientes que quieren que les levanten cosas.
+const SYSTEM_PROMPT = `You are an assistant for a scrap metal and bulky waste collection company in Montevideo, Uruguay. Your job is to take orders from clients who need items picked up.
 
-Cuando un cliente te escribe, tenés que obtener:
-1. Qué necesitan que les levanten (tipo de objeto/material)
-2. La dirección exacta donde hay que pasar (calle, número, barrio de Montevideo)
-3. Qué día prefieren (si no dicen, asumir "lo antes posible")
-4. Un nombre o teléfono de contacto (opcional, pedirlo amablemente)
+When a client writes to you, you need to obtain:
+1. What they need picked up (type of object/material)
+2. The exact address for pickup (street, number, neighborhood in Montevideo)
+3. What day they prefer (if they don't say, assume "as soon as possible")
+4. A contact name or phone number (optional, ask politely)
 
-IMPORTANTE - MUY IMPORTANTE:
-- Cuando tengas TODA la información (qué, dónde, cuándo), DEBES llamar a la función save_order ANTES de confirmar el pedido al cliente.
-- NO digas "Anotado", "Agendado", "Confirmo tu pedido" o similar HASTA QUE HAYAS LLAMADO a save_order.
-- Primero llamá a save_order con todos los datos, DESPUÉS confirmá al cliente.
+VERY IMPORTANT - CRITICAL:
+- When you have ALL the information (what, where, when), you MUST include the word "CONFIRMED" in your response.
+- If the client gives you all info in the first message, respond with "CONFIRMED" directly.
+- If info is missing, ask ONE thing at a time.
 
-Reglas:
-- Hablás en español rioplatense, informal pero profesional. Usá "vos" en vez de "tú".
-- Sé breve. Mensajes cortos como en WhatsApp, no ensayos.
-- Si el cliente te da toda la info de una, llamá a save_order y confirmá el pedido directo.
-- Si falta info, preguntá UNA cosa a la vez.
-- Solo atendés pedidos dentro de Montevideo y zona metropolitana.
-- Si alguien pregunta precios, decí que depende del volumen y que lo coordinan cuando pasen.
-- Si alguien pregunta algo no relacionado al servicio, redirigí amablemente.
+Rules:
+- ALWAYS respond in English. Never respond in Spanish.
+- Be VERY brief and casual. Natural conversation, like texting a friend.
+- DO NOT use emojis.
+- DO NOT repeat back all the information in a formatted way.
+- DO NOT use symbols like 📍 📦 📅 📞 etc.
+- Just acknowledge naturally and confirm.
+- You only handle orders within Montevideo and metropolitan area.
+- If someone asks about prices, say it depends on volume and they'll coordinate when they come by.
 
-Ejemplo de conversación:
-Cliente: "Hola tengo un lavarropas viejo para sacar"
-Vos: "¡Hola! Dale, te lo sacamos. ¿En qué dirección estás?"
-Cliente: "Benito Blanco 1340, Pocitos"
-Vos: "Perfecto. ¿Qué día te queda bien?"
-Cliente: "Mañana si puede ser"
-Vos: "Listo. ¿Un nombre para el pedido?"
-Cliente: "Juan"
-Vos: [LLAMA A save_order con items="lavarropas", address="Benito Blanco 1340", neighborhood="Pocitos", preferred_date="mañana", client_name="Juan"]
-Vos: "Anotado Juan. Quedás agendado para mañana - te pasamos a levantar el lavarropas en Benito Blanco 1340. Te confirmamos la hora. ¡Gracias!"`;
+Example conversation:
+Client: "Hi, I have an old washing machine to get rid of"
+You: "Hi! Sure, we can pick it up. What's your address?"
+Client: "Benito Blanco 1340, Pocitos"
+You: "Perfect. What day works for you?"
+Client: "Tomorrow if possible"
+You: "Great. A name for the order?"
+Client: "Juan"
+You: "CONFIRMED. All set Juan, we'll swing by tomorrow. Thanks!"`;
 
 export async function handleMessage(text: string, threadId: string): Promise<string> {
-  // Guardar mensaje del usuario en historial
+  // Save user message to history
   await saveMessage(threadId, "user", text);
   const history = await getConversationHistory(threadId);
 
-  // Filtrar mensajes con contenido vacío (Anthropic no los acepta)
+  // Filter messages with empty content (Anthropic doesn't accept them)
   const validHistory = history.filter(msg => msg.content && msg.content.trim() !== '');
 
   console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
   const { text: response } = await generateText({
     model: anthropic("claude-sonnet-4-5-20250929"),
-    system: SYSTEM_PROMPT + `\n\nCuando tengas toda la información, devolvé SOLO el texto de confirmación al cliente. NO llames a ninguna función.`,
+    system: SYSTEM_PROMPT + `\n\nIMPORTANT: You MUST respond in ENGLISH only. When you have all the information (items, address, neighborhood, date), include the word "CONFIRMED" in your response.`,
     messages: validHistory,
   });
 
   console.log("🤖 Response:", response);
 
-  // Si la respuesta contiene "Confirmo tu pedido" o "Agendado", extraer datos y guardar
-  if (response.includes("Confirmo") || response.includes("Agendado") || response.includes("pedido")) {
-    // Extraer información del historial (últimos mensajes del usuario)
+  // If the response contains order confirmation keywords, extract data and save
+  if (response.includes("CONFIRMED")) {
+    // Extract information from history (last user messages)
     const userMessages = validHistory.filter((m: any) => m.role === "user");
     const lastMessages = userMessages.slice(-4).map((m: any) => m.content).join(" ");
 
-    console.log("🔍 Detecté confirmación de pedido, buscando datos en:", lastMessages);
+    console.log("🔍 Detected order confirmation, searching for data in:", lastMessages);
 
-    // Intentar parsear los datos de la conversación
+    // Try to parse the data from the conversation
     try {
       const extractionResponse = await generateText({
         model: anthropic("claude-sonnet-4-5-20250929"),
-        system: `Sos un extractor de datos. Analizá la conversación y devolvé SOLO un objeto JSON válido (sin markdown, sin explicaciones) con estos campos: items, address, neighborhood, preferred_date, client_name, client_phone. Ejemplo: {"items":"heladera","address":"Rivera 1500","neighborhood":"La Comercial","preferred_date":"martes","client_name":"Roberto","client_phone":"099123456"}`,
+        system: `You are a data extractor. Analyze the conversation and return ONLY a valid JSON object (no markdown, no explanations) with these fields: items, address, neighborhood, preferred_date, client_name, client_phone. Example: {"items":"refrigerator","address":"Rivera 1500","neighborhood":"La Comercial","preferred_date":"Tuesday","client_name":"Roberto","client_phone":"099123456"}`,
         prompt: lastMessages,
       });
 
-      // Limpiar posibles marcas de markdown
+      // Clean possible markdown markers
       let jsonText = extractionResponse.text.trim();
       if (jsonText.startsWith("```")) {
         jsonText = jsonText.replace(/```json\n?/g, "").replace(/```\n?/g, "");
       }
 
       const orderData = JSON.parse(jsonText);
-      console.log("📦 Datos extraídos:", orderData);
+      console.log("📦 Extracted data:", orderData);
 
       if (orderData.items && orderData.address && orderData.neighborhood) {
-        console.log("✅ Guardando pedido en KV...");
+        console.log("✅ Saving order to KV...");
         const order = await saveOrder(orderData, threadId);
-        console.log("✅✅ Pedido guardado exitosamente con ID:", order.id);
+        console.log("✅✅ Order saved successfully with ID:", order.id);
       } else {
-        console.log("⚠️ Faltan campos requeridos:", {
+        console.log("⚠️ Missing required fields:", {
           items: !!orderData.items,
           address: !!orderData.address,
           neighborhood: !!orderData.neighborhood
         });
       }
     } catch (error) {
-      console.error("❌ Error extrayendo datos del pedido:", error);
+      console.error("❌ Error extracting order data:", error);
     }
   }
 
-  // Guardar respuesta del agente en historial
+  // Save agent response to history
   await saveMessage(threadId, "assistant", response);
   return response;
 }
