@@ -37,8 +37,8 @@ function optimizeRoute(orders: Order[]): Order[] {
   const remaining = [...orders];
   const route: Order[] = [];
 
-  // Empezar desde el depósito (asumimos Centro/Aguada)
-  let current = { lat: -34.8967, lng: -56.1917 };
+  // Empezar desde el depósito: Sinergia Faro Punta Carretas
+  let current = { lat: -34.9200, lng: -56.1550 };
 
   while (remaining.length > 0) {
     let nearestIdx = 0;
@@ -93,4 +93,96 @@ export function generateRoute(orders: Order[]): {
     .join("\n");
 
   return { optimizedOrders: optimized, googleMapsUrl, summary };
+}
+
+// Dividir pedidos geográficamente y generar rutas para 2 choferes
+export function generateRoutesForTwoDrivers(orders: Order[]): {
+  route1: {
+    optimizedOrders: Order[];
+    googleMapsUrl: string;
+    summary: string;
+    label: string;
+  };
+  route2: {
+    optimizedOrders: Order[];
+    googleMapsUrl: string;
+    summary: string;
+    label: string;
+  };
+} {
+  if (orders.length < 2) {
+    // Si hay menos de 2 pedidos, poner todos en ruta 1
+    const route = generateRoute(orders);
+    return {
+      route1: { ...route, label: "Chofer 1" },
+      route2: {
+        optimizedOrders: [],
+        googleMapsUrl: "",
+        summary: "",
+        label: "Chofer 2",
+      },
+    };
+  }
+
+  // Obtener coordenadas de todos los pedidos
+  const ordersWithCoords = orders.map((order) => ({
+    order,
+    coords:
+      NEIGHBORHOOD_COORDS[order.neighborhood.toLowerCase()] || {
+        lat: -34.9058,
+        lng: -56.1913,
+      },
+  }));
+
+  // Calcular punto medio de longitud
+  const avgLng =
+    ordersWithCoords.reduce((sum, o) => sum + o.coords.lng, 0) /
+    ordersWithCoords.length;
+
+  // Dividir por longitud (Oeste vs Este)
+  let zone1 = ordersWithCoords.filter((o) => o.coords.lng > avgLng);
+  let zone2 = ordersWithCoords.filter((o) => o.coords.lng <= avgLng);
+  let label1 = "Zona Oeste";
+  let label2 = "Zona Este";
+
+  // Si alguna zona está vacía, dividir por latitud
+  if (zone1.length === 0 || zone2.length === 0) {
+    const avgLat =
+      ordersWithCoords.reduce((sum, o) => sum + o.coords.lat, 0) /
+      ordersWithCoords.length;
+    zone1 = ordersWithCoords.filter((o) => o.coords.lat > avgLat);
+    zone2 = ordersWithCoords.filter((o) => o.coords.lat <= avgLat);
+    label1 = "Zona Norte";
+    label2 = "Zona Sur";
+  }
+
+  // Rebalancear si está muy desigual (ej: 9 vs 1)
+  const ratio = Math.max(zone1.length, zone2.length) / Math.min(zone1.length, zone2.length);
+  if (ratio > 3) {
+    // Si está muy desbalanceado, redistribuir
+    const sorted = ordersWithCoords.sort((a, b) => a.coords.lng - b.coords.lng);
+    const mid = Math.floor(sorted.length / 2);
+    zone1 = sorted.slice(0, mid);
+    zone2 = sorted.slice(mid);
+    label1 = "Zona Oeste";
+    label2 = "Zona Este";
+  }
+
+  // Generar rutas optimizadas para cada zona
+  const orders1 = zone1.map((o) => o.order);
+  const orders2 = zone2.map((o) => o.order);
+
+  const route1Data = generateRoute(orders1);
+  const route2Data = generateRoute(orders2);
+
+  return {
+    route1: {
+      ...route1Data,
+      label: `Chofer 1 - ${label1}`,
+    },
+    route2: {
+      ...route2Data,
+      label: `Chofer 2 - ${label2}`,
+    },
+  };
 }
