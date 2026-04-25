@@ -41,12 +41,15 @@ export async function handleMessage(text: string, threadId: string): Promise<str
   await saveMessage(threadId, "user", text);
   const history = await getConversationHistory(threadId);
 
-  console.log("📝 History length:", history.length);
+  // Filtrar mensajes con contenido vacío (Anthropic no los acepta)
+  const validHistory = history.filter(msg => msg.content && msg.content.trim() !== '');
+
+  console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
   const { text: response, toolCalls, toolResults } = await generateText({
     model: anthropic("claude-haiku-4-5-20251001"),
     system: SYSTEM_PROMPT,
-    messages: history,
+    messages: validHistory,
     maxSteps: 5, // Permitir múltiples rondas: llamar tool + generar respuesta
     tools: {
       save_order: {
