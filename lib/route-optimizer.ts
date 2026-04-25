@@ -1,6 +1,6 @@
 import type { Order } from "./types";
 
-// Coordenadas aproximadas de barrios de Montevideo para ordenar rutas
+// Approximate coordinates of Montevideo neighborhoods to order routes
 const NEIGHBORHOOD_COORDS: Record<string, { lat: number; lng: number }> = {
   "centro": { lat: -34.9058, lng: -56.1913 },
   "ciudad vieja": { lat: -34.9055, lng: -56.2038 },
@@ -17,7 +17,7 @@ const NEIGHBORHOOD_COORDS: Record<string, { lat: number; lng: number }> = {
   "unión": { lat: -34.8833, lng: -56.1500 },
   "union": { lat: -34.8833, lng: -56.1500 },
   "la comercial": { lat: -34.8983, lng: -56.1833 },
-  "aguada": { lat: -34.8967, lng: -56.1917 },
+  "aguada": { lat: -34.8894, lng: -56.2094 },
   "prado": { lat: -34.8700, lng: -56.1917 },
   "capurro": { lat: -34.8833, lng: -56.2000 },
   "cerro": { lat: -34.8800, lng: -56.2400 },
@@ -30,14 +30,14 @@ const NEIGHBORHOOD_COORDS: Record<string, { lat: number; lng: number }> = {
   "colon": { lat: -34.8433, lng: -56.2167 },
 };
 
-// Nearest-neighbor heuristic para ordenar paradas
+// Nearest-neighbor heuristic to order stops
 function optimizeRoute(orders: Order[]): Order[] {
   if (orders.length <= 1) return orders;
 
   const remaining = [...orders];
   const route: Order[] = [];
 
-  // Empezar desde el depósito: Sinergia Faro Punta Carretas
+  // Start from the depot: Sinergia Faro Punta Carretas
   let current = { lat: -34.9200, lng: -56.1550 };
 
   while (remaining.length > 0) {
@@ -66,7 +66,7 @@ function optimizeRoute(orders: Order[]): Order[] {
   return route;
 }
 
-// Generar link de Google Maps con las paradas ordenadas
+// Generate Google Maps link with ordered stops
 export function generateRoute(orders: Order[]): {
   optimizedOrders: Order[];
   googleMapsUrl: string;
@@ -74,7 +74,7 @@ export function generateRoute(orders: Order[]): {
 } {
   const optimized = optimizeRoute(orders);
 
-  // Construir URL de Google Maps con waypoints
+  // Build Google Maps URL with waypoints
   const addresses = optimized.map((o) =>
     encodeURIComponent(`${o.address}, Montevideo, Uruguay`)
   );
@@ -95,7 +95,7 @@ export function generateRoute(orders: Order[]): {
   return { optimizedOrders: optimized, googleMapsUrl, summary };
 }
 
-// Dividir pedidos geográficamente y generar rutas para 2 choferes
+// Divide orders geographically and generate routes for 2 drivers
 export function generateRoutesForTwoDrivers(orders: Order[]): {
   route1: {
     optimizedOrders: Order[];
@@ -111,20 +111,20 @@ export function generateRoutesForTwoDrivers(orders: Order[]): {
   };
 } {
   if (orders.length < 2) {
-    // Si hay menos de 2 pedidos, poner todos en ruta 1
+    // If there are fewer than 2 orders, put all in route 1
     const route = generateRoute(orders);
     return {
-      route1: { ...route, label: "Chofer 1" },
+      route1: { ...route, label: "Driver 1" },
       route2: {
         optimizedOrders: [],
         googleMapsUrl: "",
         summary: "",
-        label: "Chofer 2",
+        label: "Driver 2",
       },
     };
   }
 
-  // Obtener coordenadas de todos los pedidos
+  // Get coordinates of all orders
   const ordersWithCoords = orders.map((order) => ({
     order,
     coords:
@@ -134,41 +134,41 @@ export function generateRoutesForTwoDrivers(orders: Order[]): {
       },
   }));
 
-  // Calcular punto medio de longitud
+  // Calculate midpoint of longitude
   const avgLng =
     ordersWithCoords.reduce((sum, o) => sum + o.coords.lng, 0) /
     ordersWithCoords.length;
 
-  // Dividir por longitud (Oeste vs Este)
+  // Divide by longitude (West vs East)
   let zone1 = ordersWithCoords.filter((o) => o.coords.lng > avgLng);
   let zone2 = ordersWithCoords.filter((o) => o.coords.lng <= avgLng);
-  let label1 = "Zona Oeste";
-  let label2 = "Zona Este";
+  let label1 = "West Zone";
+  let label2 = "East Zone";
 
-  // Si alguna zona está vacía, dividir por latitud
+  // If any zone is empty, divide by latitude
   if (zone1.length === 0 || zone2.length === 0) {
     const avgLat =
       ordersWithCoords.reduce((sum, o) => sum + o.coords.lat, 0) /
       ordersWithCoords.length;
     zone1 = ordersWithCoords.filter((o) => o.coords.lat > avgLat);
     zone2 = ordersWithCoords.filter((o) => o.coords.lat <= avgLat);
-    label1 = "Zona Norte";
-    label2 = "Zona Sur";
+    label1 = "North Zone";
+    label2 = "South Zone";
   }
 
-  // Rebalancear si está muy desigual (ej: 9 vs 1)
+  // Rebalance if very uneven (e.g. 9 vs 1)
   const ratio = Math.max(zone1.length, zone2.length) / Math.min(zone1.length, zone2.length);
   if (ratio > 3) {
-    // Si está muy desbalanceado, redistribuir
+    // If very unbalanced, redistribute
     const sorted = ordersWithCoords.sort((a, b) => a.coords.lng - b.coords.lng);
     const mid = Math.floor(sorted.length / 2);
     zone1 = sorted.slice(0, mid);
     zone2 = sorted.slice(mid);
-    label1 = "Zona Oeste";
-    label2 = "Zona Este";
+    label1 = "West Zone";
+    label2 = "East Zone";
   }
 
-  // Generar rutas optimizadas para cada zona
+  // Generate optimized routes for each zone
   const orders1 = zone1.map((o) => o.order);
   const orders2 = zone2.map((o) => o.order);
 
@@ -178,11 +178,11 @@ export function generateRoutesForTwoDrivers(orders: Order[]): {
   return {
     route1: {
       ...route1Data,
-      label: `Chofer 1 - ${label1}`,
+      label: `Driver 1 - ${label1}`,
     },
     route2: {
       ...route2Data,
-      label: `Chofer 2 - ${label2}`,
+      label: `Driver 2 - ${label2}`,
     },
   };
 }
