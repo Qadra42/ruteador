@@ -19,9 +19,7 @@ export function createValidateAddressTool(
     parameters: z.object({
       address: z.string().describe('The full address provided by the customer (street + number + neighborhood if available)'),
     }),
-    // @ts-ignore - Tool execute type compatibility issue with AI SDK 6.x
-    execute: async (params) => {
-      const address = params.address;
+    execute: async ({ address }: { address: string }) => {
       console.log(`🗺️ Geocoding address: "${address}"`);
 
       const result = await geocodeAddress(address, serviceArea);

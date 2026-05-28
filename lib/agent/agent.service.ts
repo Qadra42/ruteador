@@ -9,7 +9,7 @@ import type { AgentConfig } from "../types";
 import { saveOrder, getConversationHistory, saveMessage } from "../orders/orders.service";
 import { buildSystemPrompt } from "./prompt.builder";
 import { extractOrderData } from "./order.extractor";
-import { createValidateAddressTool } from "./tools/validate-address";
+// import { createValidateAddressTool } from "./tools/validate-address";
 
 /**
  * Handle incoming message with multi-tenant support
@@ -68,12 +68,13 @@ export async function handleMessage(
     model: anthropic("claude-sonnet-4-5-20250929"),
     system: systemPrompt,
     messages: validHistory,
-    tools: {
-      validate_address: createValidateAddressTool(
-        agentConfig.service_area,
-        resolvedCustomerPhone
-      ),
-    },
+    // TODO: Fix tool types in AI SDK 6.x
+    // tools: {
+    //   validate_address: createValidateAddressTool(
+    //     agentConfig.service_area,
+    //     resolvedCustomerPhone
+    //   ),
+    // },
   });
 
   console.log("🤖 Response:", response);
