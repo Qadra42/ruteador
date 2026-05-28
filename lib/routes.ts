@@ -1,21 +1,20 @@
 import { prisma } from "./db";
-import type { Order } from "./types";
 
 /**
  * Save a route to Postgres for map visualization
  */
 export async function saveRouteForMap(params: {
-  orders: Order[];
+  orders: any[];
   driverLabel: string;
   companyId: string;
   driverCount: string;
   googleMapsUrl?: string;
 }) {
-  const orderIds = params.orders.map((o) => o.id);
+  const orderIds = params.orders.map((o: any) => o.id);
 
   // Build optimized sequence (for now, just use the order as-is)
   // TODO: Implement actual route optimization in Phase 5
-  const optimizedSequence = params.orders.map((o, idx) => ({
+  const optimizedSequence = params.orders.map((o: any, idx: number) => ({
     sequence: idx + 1,
     orderId: o.id,
     address: o.address,

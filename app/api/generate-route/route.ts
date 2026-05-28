@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPendingOrders, markOrdersAsRouted } from "@/lib/orders";
 import { saveRouteForMap } from "@/lib/routes";
 import { prisma } from "@/lib/db";
-import type { Order } from "@/lib/types";
 
 // Build Google Maps URL with waypoints (Google will optimize)
-function buildGoogleMapsUrl(orders: Order[]): string {
+function buildGoogleMapsUrl(orders: any[]): string {
   if (orders.length === 0) return "";
 
-  const addresses = orders.map((o) =>
-    encodeURIComponent(`${o.address}, ${o.neighborhood}, Montevideo, Uruguay`)
+  const addresses = orders.map((o: any) =>
+    encodeURIComponent(`${o.address}, Montevideo, Uruguay`)
   );
 
   if (addresses.length === 1) {
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Read pending orders and filter only the selected ones
     const allOrders = await getPendingOrders(company.id);
-    const selectedOrders = allOrders.filter((order) =>
+    const selectedOrders = allOrders.filter((order: any) =>
       orderIds.includes(order.id)
     );
 
@@ -106,12 +105,12 @@ export async function POST(request: NextRequest) {
       });
 
       // Build summaries
-      const summary1 = orders1.map((o, i) =>
-        `${i + 1}. ${o.address} (${o.neighborhood}) — ${o.items}`
+      const summary1 = orders1.map((o: any, i: number) =>
+        `${i + 1}. ${o.address} — ${o.items}`
       ).join("\n");
 
-      const summary2 = orders2.map((o, i) =>
-        `${i + 1}. ${o.address} (${o.neighborhood}) — ${o.items}`
+      const summary2 = orders2.map((o: any, i: number) =>
+        `${i + 1}. ${o.address} — ${o.items}`
       ).join("\n");
 
       routes = [
@@ -144,8 +143,8 @@ export async function POST(request: NextRequest) {
       });
 
       // Build summary
-      const summary = selectedOrders.map((o, i) =>
-        `${i + 1}. ${o.address} (${o.neighborhood}) — ${o.items}`
+      const summary = selectedOrders.map((o: any, i: number) =>
+        `${i + 1}. ${o.address} — ${o.items}`
       ).join("\n");
 
       routes = [
@@ -190,10 +189,10 @@ export async function POST(request: NextRequest) {
       const orders1 = selectedOrders.slice(0, midpoint);
       const orders2 = selectedOrders.slice(midpoint);
 
-      await markOrdersAsRouted(orders1.map((o) => o.id), routes[0].customMapUrl.split('/').pop()!);
-      await markOrdersAsRouted(orders2.map((o) => o.id), routes[1].customMapUrl.split('/').pop()!);
+      await markOrdersAsRouted(orders1.map((o: any) => o.id), routes[0].customMapUrl.split('/').pop()!);
+      await markOrdersAsRouted(orders2.map((o: any) => o.id), routes[1].customMapUrl.split('/').pop()!);
     } else {
-      await markOrdersAsRouted(selectedOrders.map((o) => o.id), routes[0].customMapUrl.split('/').pop()!);
+      await markOrdersAsRouted(selectedOrders.map((o: any) => o.id), routes[0].customMapUrl.split('/').pop()!);
     }
 
     return NextResponse.json({
