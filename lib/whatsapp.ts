@@ -1,7 +1,7 @@
 /**
  * Kapso WhatsApp Client
  * Using official @kapso/whatsapp-cloud-api SDK
- * https://docs.kapso.ai
+ * https://docs.kapso.ai/docs/whatsapp/typescript-sdk/introduction
  */
 
 import { WhatsAppClient } from '@kapso/whatsapp-cloud-api';
@@ -34,7 +34,7 @@ export class KapsoClient {
     }
 
     this.client = new WhatsAppClient({
-      baseUrl: 'https://api.kapso.ai/meta/whatsapp',
+      baseUrl: 'https://app.kapso.ai/api/meta/',
       kapsoApiKey: apiKey,
     });
 
