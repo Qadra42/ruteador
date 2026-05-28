@@ -91,9 +91,18 @@ Vos: "CONFIRMADO. Listo Juan, pasamos mañana. Gracias!"`;
 export async function handleMessage(
   text: string,
   threadId: string,
-  companyId: string,
-  customerPhone: string
+  companyId?: string,
+  customerPhone?: string
 ): Promise<string> {
+  // For legacy Telegram bot support (single-tenant)
+  if (!companyId) {
+    const firstCompany = await prisma.company.findFirst();
+    if (!firstCompany) {
+      throw new Error('No company configured. Run seed script first.');
+    }
+    companyId = firstCompany.id;
+    customerPhone = threadId; // Use threadId as customer identifier for legacy
+  }
   // Load agent configuration for this company
   const agentConfig = await prisma.agentConfig.findUnique({
     where: { companyId },
@@ -133,7 +142,9 @@ export async function handleMessage(
         parameters: z.object({
           address: z.string().describe('The full address provided by the customer (street + number + neighborhood if available)'),
         }),
-        execute: async ({ address }) => {
+        // @ts-ignore - Tool execute type compatibility issue with AI SDK 6.x
+        execute: async (params) => {
+          const address = params.address;
           console.log(`🗺️ Geocoding address: "${address}"`);
 
           const result = await geocodeAddress(address, agentConfig.serviceArea);
@@ -145,19 +156,21 @@ export async function handleMessage(
             };
           }
 
-          // Send location pin to customer via WhatsApp
-          try {
-            await kapso.sendLocation({
-              to: customerPhone,
-              latitude: result.location.lat,
-              longitude: result.location.lng,
-              name: result.formattedAddress,
-              address: result.formattedAddress,
-            });
+          // Send location pin to customer via WhatsApp (only for WhatsApp, not Telegram)
+          if (customerPhone) {
+            try {
+              await kapso.sendLocation({
+                to: customerPhone,
+                latitude: result.location.lat,
+                longitude: result.location.lng,
+                name: result.formattedAddress,
+                address: result.formattedAddress,
+              });
 
-            console.log(`✅ Location sent: ${result.formattedAddress}`);
-          } catch (error) {
-            console.error('❌ Error sending location:', error);
+              console.log(`✅ Location sent: ${result.formattedAddress}`);
+            } catch (error) {
+              console.error('❌ Error sending location:', error);
+            }
           }
 
           return {
@@ -196,7 +209,7 @@ export async function handleMessage(
       const orderData = JSON.parse(jsonText);
       console.log("📦 Extracted data:", orderData);
 
-      if (orderData.items && orderData.address) {
+      if (orderData.items && orderData.address && companyId) {
         console.log("✅ Saving order to database...");
         const order = await saveOrder(orderData, threadId, companyId);
         console.log("✅✅ Order saved successfully with ID:", order.id);
