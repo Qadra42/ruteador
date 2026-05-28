@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPendingOrders, markOrdersAsRouted } from "@/lib/orders";
 import { saveRouteForMap } from "@/lib/routes";
+import { prisma } from "@/lib/db";
 import type { Order } from "@/lib/types";
 
 // Build Google Maps URL with waypoints (Google will optimize)
@@ -35,8 +36,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // TODO: In Phase 3, get companyId from authenticated user session
+    // For now, get the first company in the database
+    const company = await prisma.company.findFirst();
+
+    if (!company) {
+      return NextResponse.json(
+        { error: "No company found. Run seed script first." },
+        { status: 404 }
+      );
+    }
+
     // 2. Read pending orders and filter only the selected ones
-    const allOrders = await getPendingOrders();
+    const allOrders = await getPendingOrders(company.id);
     const selectedOrders = allOrders.filter((order) =>
       orderIds.includes(order.id)
     );
@@ -80,11 +92,17 @@ export async function POST(request: NextRequest) {
       const savedRoute1 = await saveRouteForMap({
         orders: orders1,
         driverLabel: "Driver 1",
+        companyId: company.id,
+        driverCount: "2",
+        googleMapsUrl: googleMapsUrl1,
       });
 
       const savedRoute2 = await saveRouteForMap({
         orders: orders2,
         driverLabel: "Driver 2",
+        companyId: company.id,
+        driverCount: "2",
+        googleMapsUrl: googleMapsUrl2,
       });
 
       // Build summaries
@@ -120,6 +138,9 @@ export async function POST(request: NextRequest) {
       const savedRoute = await saveRouteForMap({
         orders: selectedOrders,
         driverLabel: "Single route",
+        companyId: company.id,
+        driverCount: "1",
+        googleMapsUrl,
       });
 
       // Build summary
@@ -162,8 +183,18 @@ export async function POST(request: NextRequest) {
     //   }
     // }
 
-    // 5. Mark orders as "routed"
-    await markOrdersAsRouted(selectedOrders.map((o) => o.id));
+    // 5. Mark orders as "assigned" to routes
+    // Update each route's orders
+    if (numDrivers === 2 && selectedOrders.length >= 2) {
+      const midpoint = Math.floor(selectedOrders.length / 2);
+      const orders1 = selectedOrders.slice(0, midpoint);
+      const orders2 = selectedOrders.slice(midpoint);
+
+      await markOrdersAsRouted(orders1.map((o) => o.id), routes[0].customMapUrl.split('/').pop()!);
+      await markOrdersAsRouted(orders2.map((o) => o.id), routes[1].customMapUrl.split('/').pop()!);
+    } else {
+      await markOrdersAsRouted(selectedOrders.map((o) => o.id), routes[0].customMapUrl.split('/').pop()!);
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,37 +1,36 @@
-import { kv } from "@vercel/kv";
-import { nanoid } from "nanoid";
-import type { SavedRoute, Order } from "./types";
+import { prisma } from "./db";
+import type { Order } from "./types";
 
 /**
- * Save a route to KV for map visualization
+ * Save a route to Postgres for map visualization
  */
 export async function saveRouteForMap(params: {
   orders: Order[];
   driverLabel: string;
-}): Promise<SavedRoute> {
-  const routeId = nanoid(12);
+  companyId: string;
+  driverCount: string;
+  googleMapsUrl?: string;
+}) {
+  const orderIds = params.orders.map((o) => o.id);
 
-  // Calculate center point (average of all coordinates)
-  const coords = params.orders.map((o) => ({
-    lat: -34.9058, // Default, will use actual coords from NEIGHBORHOOD_COORDS
-    lng: -56.1913,
+  // Build optimized sequence (for now, just use the order as-is)
+  // TODO: Implement actual route optimization in Phase 5
+  const optimizedSequence = params.orders.map((o, idx) => ({
+    sequence: idx + 1,
+    orderId: o.id,
+    address: o.address,
+    items: o.items,
   }));
 
-  const center = {
-    lat: coords.reduce((sum, c) => sum + c.lat, 0) / coords.length || -34.9058,
-    lng: coords.reduce((sum, c) => sum + c.lng, 0) / coords.length || -56.1913,
-  };
-
-  const route: SavedRoute = {
-    id: routeId,
-    created_at: new Date().toISOString(),
-    driver_label: params.driverLabel,
-    orders: params.orders,
-    center,
-  };
-
-  // Save to KV with 7 day expiration (routes are temporary)
-  await kv.set(`route:${routeId}`, route, { ex: 60 * 60 * 24 * 7 });
+  const route = await prisma.route.create({
+    data: {
+      companyId: params.companyId,
+      driverCount: params.driverCount,
+      orderIds,
+      optimizedSequence,
+      googleMapsUrl: params.googleMapsUrl || null,
+    },
+  });
 
   return route;
 }
@@ -39,7 +38,11 @@ export async function saveRouteForMap(params: {
 /**
  * Get a saved route by ID
  */
-export async function getRoute(routeId: string): Promise<SavedRoute | null> {
-  const route = await kv.get(`route:${routeId}`);
-  return route as SavedRoute | null;
+export async function getRoute(routeId: string) {
+  return await prisma.route.findUnique({
+    where: { id: routeId },
+    include: {
+      company: true,
+    },
+  });
 }

@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+// Companies (Tenants)
+// Each company represents a business using the Route Agent
+model Company {
+  id             String   @id @default(uuid())
+  name           String
+  whatsappNumber String   @unique @map("whatsapp_number")
+  businessType   String   @map("business_type") // 'junk_removal', 'delivery', 'distribution', 'field_service', 'custom'
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users        User[]
+  agentConfig  AgentConfig?
+  orders       Order[]
+  routes       Route[]
+
+  @@map("companies")
+}
+
+// Users (Business Owners, Drivers)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   // 'admin', 'business_owner', 'driver'
+  companyId String?  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  company Company? @relation(fields: [companyId], references: [id])
+
+  @@map("users")
+}
+
+// Agent Configurations
+// Customizable AI agent settings per company
+model AgentConfig {
+  id                  String   @id @default(uuid())
+  companyId           String   @unique @map("company_id")
+
+  // Localization
+  language            String   @default("es-UY") // 'es-UY', 'es-AR', 'es-MX', 'en', etc.
+
+  // Business details
+  businessDescription String   @map("business_description")
+  serviceArea         String   @map("service_area")
+
+  // Agent behavior
+  greetingMessage     String?  @map("greeting_message")
+  requiredFields      Json     @default("[\"what\", \"where\", \"when\"]") @map("required_fields") // ['what', 'where', 'when', 'contact']
+  customInstructions  String?  @map("custom_instructions")
+  customPrompt        String?  @map("custom_prompt") // Override entire system prompt
+
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("agent_configs")
+}
+
+// Orders (Órdenes de servicio)
+model Order {
+  id            String    @id @default(uuid())
+  companyId     String    @map("company_id")
+
+  // Customer info
+  customerPhone String    @map("customer_phone")
+  customerName  String?   @map("customer_name")
+
+  // Order details
+  items         String
+  address       String
+  location      Json?     // { lat: -34.xxx, lng: -56.xxx }
+  preferredDate String?   @map("preferred_date")
+
+  // Status
+  status        String    @default("pending") // 'pending', 'assigned', 'completed', 'cancelled'
+  confirmedAt   DateTime? @map("confirmed_at")
+
+  // Route assignment
+  routeId       String?   @map("route_id")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("orders")
+}
+
+// Routes (Rutas generadas)
+model Route {
+  id                 String   @id @default(uuid())
+  companyId          String   @map("company_id")
+
+  // Route details
+  driverCount        String   @map("driver_count") // '1' or '2'
+  orderIds           Json     @map("order_ids") // UUID[] of orders
+  optimizedSequence  Json     @map("optimized_sequence") // Optimized order sequence
+
+  // Metadata
+  totalDistance      String?  @map("total_distance")
+  estimatedDuration  String?  @map("estimated_duration")
+  mapUrl             String?  @map("map_url")
+  googleMapsUrl      String?  @map("google_maps_url")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("routes")
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleMessage } from '@/lib/agent';
 import { kapso } from '@/lib/whatsapp';
+import { prisma } from '@/lib/db';
 
 /**
  * Verifica la firma del webhook de Kapso (seguridad)
@@ -67,16 +68,36 @@ export async function POST(request: NextRequest) {
     }
 
     const messageText = message.text.body;
-    const threadId = from; // Usamos el número como thread ID
 
     console.log(`💬 Texto: "${messageText}"`);
 
-    // Procesar mensaje con el agente
-    const response = await handleMessage(messageText, threadId);
+    // Identify which company owns this WhatsApp number
+    const businessWhatsAppNumber = process.env.KAPSO_PHONE_NUMBER_ID;
+
+    const company = await prisma.company.findUnique({
+      where: { whatsappNumber: businessWhatsAppNumber },
+    });
+
+    if (!company) {
+      console.error(`❌ No company found for WhatsApp: ${businessWhatsAppNumber}`);
+      await kapso.sendMessage({
+        to: from,
+        message: 'Lo sentimos, el servicio no está configurado correctamente. Por favor contactá al administrador.',
+      });
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
+
+    console.log(`🏢 Company identified: ${company.name} (${company.id})`);
+
+    // Thread ID unique per company + customer
+    const threadId = `${company.id}:${from}`;
+
+    // Process message with multi-tenant agent
+    const response = await handleMessage(messageText, threadId, company.id);
 
     console.log(`🤖 Respuesta: "${response}"`);
 
-    // Enviar respuesta por WhatsApp
+    // Send response via WhatsApp
     await kapso.sendMessage({
       to: from,
       message: response,

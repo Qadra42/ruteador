@@ -1,50 +1,80 @@
 import { kv } from "@vercel/kv";
-import { nanoid } from "nanoid";
-import type { Order } from "./types";
+import { prisma } from "./db";
 
+/**
+ * Save a new order to the database (Postgres via Prisma)
+ */
 export async function saveOrder(
-  params: Omit<Order, "id" | "status" | "created_at" | "telegram_thread_id">,
-  threadId?: string
-): Promise<Order> {
-  const order: Order = {
-    ...params,
-    id: nanoid(8),
-    status: "pending",
-    created_at: new Date().toISOString(),
-    telegram_thread_id: threadId || "",
-  };
-  await kv.hset(`order:${order.id}`, order);
-  await kv.sadd("orders:pending", order.id);
+  orderData: {
+    items: string;
+    address: string;
+    neighborhood?: string;
+    preferred_date?: string;
+    client_name?: string;
+    client_phone?: string;
+  },
+  customerPhone: string,
+  companyId: string
+) {
+  const order = await prisma.order.create({
+    data: {
+      companyId,
+      customerPhone,
+      customerName: orderData.client_name || null,
+      items: orderData.items,
+      address: orderData.neighborhood
+        ? `${orderData.address}, ${orderData.neighborhood}`
+        : orderData.address,
+      preferredDate: orderData.preferred_date || "lo antes posible",
+      status: "pending",
+      confirmedAt: new Date(),
+    },
+  });
+
   return order;
 }
 
-export async function getPendingOrders(): Promise<Order[]> {
-  const pendingIds = (await kv.smembers("orders:pending")) as string[];
-  const routedIds = (await kv.smembers("orders:routed")) as string[];
-
-  const allIds = [...pendingIds, ...routedIds];
-
-  const orders = await Promise.all(
-    allIds.map((id) => kv.hgetall(`order:${id}`))
-  );
-
-  // Sort by creation date (most recent first)
-  return (orders.filter(Boolean) as Order[]).sort((a, b) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+/**
+ * Get all pending orders for a company
+ */
+export async function getPendingOrders(companyId: string) {
+  return await prisma.order.findMany({
+    where: {
+      companyId,
+      status: {
+        in: ["pending", "assigned"],
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 }
 
-export async function markOrdersAsRouted(orderIds: string[]): Promise<void> {
-  for (const id of orderIds) {
-    const order = await kv.hgetall(`order:${id}`);
-    if (order) {
-      await kv.hset(`order:${id}`, { ...order, status: "routed" });
-      await kv.srem("orders:pending", id);
-      await kv.sadd("orders:routed", id);
-    }
-  }
+/**
+ * Mark orders as assigned to a route
+ */
+export async function markOrdersAsRouted(
+  orderIds: string[],
+  routeId: string
+): Promise<void> {
+  await prisma.order.updateMany({
+    where: {
+      id: {
+        in: orderIds,
+      },
+    },
+    data: {
+      status: "assigned",
+      routeId,
+    },
+  });
 }
 
+/**
+ * Conversation history management (kept in KV for speed)
+ * Key format: conversation:{companyId}:{customerPhone}
+ */
 export async function saveMessage(
   threadId: string,
   role: string,
