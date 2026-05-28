@@ -18,7 +18,7 @@ export async function GET() {
     const orders = await getPendingOrders(company.id);
 
     // Map Prisma orders to legacy format for dashboard compatibility
-    const mappedOrders = orders.map((order) => ({
+    const mappedOrders = orders.map((order: any) => ({
       id: order.id,
       client_name: order.customerName || 'No name',
       client_phone: order.customerPhone,
