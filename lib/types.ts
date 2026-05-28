@@ -1,31 +1,29 @@
-import { z } from "zod";
+/**
+ * Type definitions for application data structures
+ */
 
-export const OrderSchema = z.object({
-  id: z.string(),
-  items: z.string(),
-  address: z.string(),
-  neighborhood: z.string(),
-  preferred_date: z.string(),
-  client_name: z.string().optional(),
-  client_phone: z.string().optional(),
-  status: z.enum(["pending", "routed", "completed"]),
-  created_at: z.string(),
-  telegram_thread_id: z.string(),
-});
+export interface Order {
+  id: string;
+  company_id: string;
+  customer_phone: string;
+  customer_name?: string;
+  client_name?: string;
+  client_phone?: string;
+  items: string;
+  address: string;
+  neighborhood: string;
+  preferred_date: string;
+  status: 'pending' | 'assigned' | 'completed';
+  created_at: string;
+}
 
-export type Order = z.infer<typeof OrderSchema>;
-
-// Saved route for custom map visualization
-export const SavedRouteSchema = z.object({
-  id: z.string(),
-  created_at: z.string(),
-  driver_label: z.string(),
-  orders: z.array(OrderSchema),
-  // Coordinates for map center
-  center: z.object({
-    lat: z.number(),
-    lng: z.number(),
-  }),
-});
-
-export type SavedRoute = z.infer<typeof SavedRouteSchema>;
+export interface SavedRoute {
+  id: string;
+  driver_label: string;
+  orders: Order[];
+  created_at: string;
+  center: {
+    lat: number;
+    lng: number;
+  };
+}
