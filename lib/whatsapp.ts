@@ -1,7 +1,10 @@
 /**
  * Kapso WhatsApp Client
+ * Using official @kapso/whatsapp-cloud-api SDK
  * https://docs.kapso.ai
  */
+
+import { WhatsAppClient } from '@kapso/whatsapp-cloud-api';
 
 interface KapsoMessage {
   to: string;
@@ -9,7 +12,7 @@ interface KapsoMessage {
 }
 
 export class KapsoClient {
-  private apiKey: string;
+  private client: WhatsAppClient;
   private phoneNumberId: string;
 
   constructor() {
@@ -22,34 +25,27 @@ export class KapsoClient {
       );
     }
 
-    this.apiKey = apiKey;
+    this.client = new WhatsAppClient({
+      baseUrl: 'https://api.kapso.ai/meta/whatsapp',
+      kapsoApiKey: apiKey,
+    });
+
     this.phoneNumberId = phoneNumberId;
   }
 
   async sendMessage({ to, message }: KapsoMessage): Promise<void> {
-    const response = await fetch('https://api.kapso.ai/v1/messages', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone_number_id: this.phoneNumberId,
+    try {
+      await this.client.messages.sendText({
+        phoneNumberId: this.phoneNumberId,
         to,
-        type: 'text',
-        text: {
-          body: message,
-        },
-      }),
-    });
+        body: message,
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
+      console.log('✅ WhatsApp message sent to:', to);
+    } catch (error) {
       console.error('❌ Kapso API error:', error);
-      throw new Error(`Kapso API error: ${error}`);
+      throw error;
     }
-
-    console.log('✅ WhatsApp message sent to:', to);
   }
 }
 

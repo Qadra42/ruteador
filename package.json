@@ -13,6 +13,7 @@
     "@chat-adapter/state-memory": "^4.26.0",
     "@chat-adapter/telegram": "^4.26.0",
     "@googlemaps/js-api-loader": "^2.0.2",
+    "@kapso/whatsapp-cloud-api": "^0.2.1",
     "@vercel/kv": "^3.0.0",
     "ai": "^6.0.168",
     "chat": "^4.26.0",

@@ -9,6 +9,7 @@
         "@chat-adapter/state-memory": "^4.26.0",
         "@chat-adapter/telegram": "^4.26.0",
         "@googlemaps/js-api-loader": "^2.0.2",
+        "@kapso/whatsapp-cloud-api": "^0.2.1",
         "@vercel/kv": "^3.0.0",
         "ai": "^6.0.168",
         "chat": "^4.26.0",
@@ -181,6 +182,8 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+
+    "@kapso/whatsapp-cloud-api": ["@kapso/whatsapp-cloud-api@0.2.1", "", { "dependencies": { "zod": "^4.1.11" } }, "sha512-+piFK74eARsLqabxssAnMnWUyGPbO3oPhWrQNagu+70alo9RoapRNfzG9bx4nOOgxlKbv/c7s2mo2j8K3qq9kg=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@0.2.12", "", { "dependencies": { "@emnapi/core": "^1.4.3", "@emnapi/runtime": "^1.4.3", "@tybys/wasm-util": "^0.10.0" } }, "sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ=="],
 
