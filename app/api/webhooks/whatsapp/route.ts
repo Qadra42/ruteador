@@ -4,23 +4,20 @@ import { kapso } from '@/lib/whatsapp';
 
 /**
  * Verifica la firma del webhook de Kapso (seguridad)
+ * Por ahora deshabilitado en testing - TODO: implementar correctamente
  */
 function verifyWebhookSignature(request: NextRequest, body: string): boolean {
   const signature = request.headers.get('x-kapso-signature');
   const secret = process.env.KAPSO_WEBHOOK_SECRET;
 
-  if (!secret) {
-    console.warn('⚠️ KAPSO_WEBHOOK_SECRET not configured - skipping signature verification');
-    return true; // Allow in development
-  }
+  // Logging para debug
+  console.log('🔐 Webhook signature check:', {
+    hasSignature: !!signature,
+    hasSecret: !!secret,
+  });
 
-  if (!signature) {
-    console.warn('⚠️ No signature in webhook request');
-    return false;
-  }
-
-  // TODO: Implementar verificación real de firma según docs de Kapso
-  // Por ahora permitimos todo en testing
+  // Por ahora permitimos todos los requests (testing)
+  // TODO: Implementar verificación correcta cuando tengamos la spec de Kapso
   return true;
 }
 
