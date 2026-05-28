@@ -40,10 +40,8 @@ export async function POST(request: NextRequest) {
 
     console.log('📨 WhatsApp webhook recibido:', JSON.stringify(body, null, 2));
 
-    // Estructura del webhook de Kapso
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const message = changes?.value?.messages?.[0];
+    // Estructura del webhook de Kapso (real)
+    const message = body.message;
 
     if (!message) {
       console.log('⚠️ No hay mensaje en el webhook');
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Datos del mensaje
-    const from = message.from; // Número del cliente (ej: "598xxxxxxxx")
+    const from = message.from; // Número del cliente (ej: "59892065628")
     const messageId = message.id;
     const messageType = message.type; // "text", "audio", "image", etc.
 
