@@ -3,7 +3,7 @@
  */
 
 import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createAzure } from "@ai-sdk/azure";
 import type { OrderData, ConversationMessage } from '../types';
 
 /**
@@ -18,17 +18,14 @@ export async function extractOrderData(
   console.log("🔍 Extracting order data from:", lastMessages);
 
   try {
-    // Initialize Azure OpenAI client (AI Foundry)
-    const azure = createOpenAI({
+    // Initialize Azure OpenAI client
+    const azure = createAzure({
       apiKey: process.env.AZURE_OPENAI_API_KEY!,
-      baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT_NAME}`,
-      headers: {
-        'api-key': process.env.AZURE_OPENAI_API_KEY!,
-      },
+      resourceName: 'ruteador',
     });
 
     const extractionResponse = await generateText({
-      model: azure.chat('gpt-4o'),
+      model: azure(process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4.1'),
       system: `Sos un extractor de datos. Analizá la conversación y devolvé SOLO un objeto JSON válido (sin markdown, sin explicaciones) con estos campos: items, address, neighborhood, preferred_date, client_name, client_phone. Ejemplo: {"items":"heladera","address":"Rivera 1500","neighborhood":"La Comercial","preferred_date":"mañana","client_name":"Roberto","client_phone":"099123456"}`,
       prompt: lastMessages,
     });
