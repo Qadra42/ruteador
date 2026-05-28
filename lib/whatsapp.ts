@@ -11,6 +11,14 @@ interface KapsoMessage {
   message: string;
 }
 
+interface KapsoLocation {
+  to: string;
+  latitude: number;
+  longitude: number;
+  name?: string;
+  address?: string;
+}
+
 export class KapsoClient {
   private client: WhatsAppClient;
   private phoneNumberId: string;
@@ -44,6 +52,24 @@ export class KapsoClient {
       console.log('✅ WhatsApp message sent to:', to);
     } catch (error) {
       console.error('❌ Kapso API error:', error);
+      throw error;
+    }
+  }
+
+  async sendLocation({ to, latitude, longitude, name, address }: KapsoLocation): Promise<void> {
+    try {
+      await this.client.messages.sendLocation({
+        phoneNumberId: this.phoneNumberId,
+        to,
+        latitude,
+        longitude,
+        name,
+        address,
+      });
+
+      console.log('✅ WhatsApp location sent to:', to);
+    } catch (error) {
+      console.error('❌ Kapso API error sending location:', error);
       throw error;
     }
   }

@@ -1,7 +1,10 @@
-import { generateText } from "ai";
+import { generateText, tool } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { z } from "zod";
 import { saveOrder, getConversationHistory, saveMessage } from "./orders";
 import { prisma } from "./db";
+import { geocodeAddress } from "./geocoding";
+import { kapso } from "./whatsapp";
 
 /**
  * Agent Configuration Interface
@@ -55,6 +58,8 @@ Cuando un cliente te escribe, necesitás obtener:
 ${fieldsInstructions}
 
 MUY IMPORTANTE - CRÍTICO:
+- Cuando el cliente mencione una dirección (calle y número), TENÉS QUE validarla usando el tool validate_address.
+- Después de validar la dirección, preguntá "¿Es ahí?" para que confirme.
 - Cuando tengas TODA la información necesaria (${config.requiredFields.join(', ')}), TENÉS QUE incluir la palabra "CONFIRMADO" en tu respuesta.
 - Si el cliente te da toda la info en el primer mensaje, respondé con "CONFIRMADO" directamente.
 - Si falta información, preguntá UNA cosa a la vez.
@@ -86,7 +91,8 @@ Vos: "CONFIRMADO. Listo Juan, pasamos mañana. Gracias!"`;
 export async function handleMessage(
   text: string,
   threadId: string,
-  companyId: string
+  companyId: string,
+  customerPhone: string
 ): Promise<string> {
   // Load agent configuration for this company
   const agentConfig = await prisma.agentConfig.findUnique({
@@ -121,6 +127,49 @@ export async function handleMessage(
     model: anthropic("claude-sonnet-4-5-20250929"),
     system: systemPrompt,
     messages: validHistory,
+    tools: {
+      validate_address: tool({
+        description: 'Validate and geocode an address. Use this when the customer provides a street address. This will send a location pin to confirm the address with the customer.',
+        parameters: z.object({
+          address: z.string().describe('The full address provided by the customer (street + number + neighborhood if available)'),
+        }),
+        execute: async ({ address }) => {
+          console.log(`🗺️ Geocoding address: "${address}"`);
+
+          const result = await geocodeAddress(address, agentConfig.serviceArea);
+
+          if (!result) {
+            return {
+              success: false,
+              message: 'No se pudo validar la dirección. Por favor verificá que sea correcta.',
+            };
+          }
+
+          // Send location pin to customer via WhatsApp
+          try {
+            await kapso.sendLocation({
+              to: customerPhone,
+              latitude: result.location.lat,
+              longitude: result.location.lng,
+              name: result.formattedAddress,
+              address: result.formattedAddress,
+            });
+
+            console.log(`✅ Location sent: ${result.formattedAddress}`);
+          } catch (error) {
+            console.error('❌ Error sending location:', error);
+          }
+
+          return {
+            success: true,
+            formattedAddress: result.formattedAddress,
+            neighborhood: result.neighborhood,
+            city: result.city,
+            coordinates: result.location,
+          };
+        },
+      }),
+    },
   });
 
   console.log("🤖 Response:", response);

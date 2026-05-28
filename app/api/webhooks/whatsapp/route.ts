@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     const threadId = `${company.id}:${from}`;
 
     // Process message with multi-tenant agent
-    const response = await handleMessage(messageText, threadId, company.id);
+    const response = await handleMessage(messageText, threadId, company.id, from);
 
     console.log(`🤖 Respuesta: "${response}"`);
 
