@@ -3,7 +3,7 @@
  */
 
 import { generateText } from "ai";
-import { createAzure } from "@ai-sdk/azure";
+import { createOpenAI } from "@ai-sdk/openai";
 import { sql } from "../db";
 import type { AgentConfig } from "../types";
 import { saveOrder, getConversationHistory, saveMessage } from "../orders/orders.service";
@@ -65,13 +65,16 @@ export async function handleMessage(
   console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
   // Initialize Azure OpenAI client (AI Foundry)
-  const azure = createAzure({
-    apiKey: process.env.AZURE_OPENAI_API_KEY,
-    baseURL: process.env.AZURE_OPENAI_ENDPOINT,
+  const azure = createOpenAI({
+    apiKey: process.env.AZURE_OPENAI_API_KEY!,
+    baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT_NAME}`,
+    headers: {
+      'api-key': process.env.AZURE_OPENAI_API_KEY!,
+    },
   });
 
   const { text: response } = await generateText({
-    model: azure(process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4o"),
+    model: azure.chat('gpt-4o'),
     system: systemPrompt,
     messages: validHistory,
     // TODO: Fix tool types in AI SDK 6.x
