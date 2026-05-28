@@ -64,10 +64,10 @@ export async function handleMessage(
 
   console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
-  // Initialize Azure OpenAI client
+  // Initialize Azure OpenAI client (AI Foundry)
   const azure = createAzure({
     apiKey: process.env.AZURE_OPENAI_API_KEY,
-    resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME, // e.g., "your-resource"
+    baseURL: process.env.AZURE_OPENAI_ENDPOINT,
   });
 
   const { text: response } = await generateText({

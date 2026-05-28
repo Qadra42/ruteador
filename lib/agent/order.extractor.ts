@@ -18,10 +18,10 @@ export async function extractOrderData(
   console.log("🔍 Extracting order data from:", lastMessages);
 
   try {
-    // Initialize Azure OpenAI client
+    // Initialize Azure OpenAI client (AI Foundry)
     const azure = createAzure({
       apiKey: process.env.AZURE_OPENAI_API_KEY,
-      resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME,
+      baseURL: process.env.AZURE_OPENAI_ENDPOINT,
     });
 
     const extractionResponse = await generateText({
