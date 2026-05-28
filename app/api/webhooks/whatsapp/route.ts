@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleMessage } from '@/lib/agent';
+import { handleMessage } from '@/lib/agent/agent.service';
 import { kapso } from '@/lib/whatsapp';
 import { sql } from '@/lib/db';
 

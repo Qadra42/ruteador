@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPendingOrders } from "@/lib/orders";
+import { getPendingOrders } from "@/lib/orders/orders.service";
 import { sql } from "@/lib/db";
 
 export async function GET() {

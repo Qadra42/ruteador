@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPendingOrders, markOrdersAsRouted } from "@/lib/orders";
-import { saveRouteForMap } from "@/lib/routes";
+import { getPendingOrders, markOrdersAsRouted } from "@/lib/orders/orders.service";
+import { saveRouteForMap } from "@/lib/routes/routes.service";
 import { sql } from "@/lib/db";
 
 // Build Google Maps URL with waypoints (Google will optimize)

@@ -1,19 +1,13 @@
-import { sql } from "./db";
-
 /**
- * Save a route to Postgres for map visualization
+ * Routes repository - Pure SQL queries
  */
-export async function saveRouteForMap(params: {
-  orders: any[];
-  driverLabel: string;
-  companyId: string;
-  driverCount: string;
-  googleMapsUrl?: string;
-}) {
+
+import { sql } from '../db';
+import type { RouteParams } from '../types';
+
+export async function insertRoute(params: RouteParams) {
   const orderIds = params.orders.map((o: any) => o.id);
 
-  // Build optimized sequence (for now, just use the order as-is)
-  // TODO: Implement actual route optimization in Phase 5
   const optimizedSequence = params.orders.map((o: any, idx: number) => ({
     sequence: idx + 1,
     orderId: o.id,
@@ -42,10 +36,7 @@ export async function saveRouteForMap(params: {
   return route;
 }
 
-/**
- * Get a saved route by ID
- */
-export async function getRoute(routeId: string) {
+export async function findRouteById(routeId: string) {
   const [route] = await sql`
     SELECT r.*, c.*
     FROM routes r

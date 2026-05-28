@@ -1,5 +1,5 @@
 /**
- * Type definitions for application data structures
+ * Order domain types
  */
 
 export interface Order {
@@ -17,13 +17,11 @@ export interface Order {
   created_at: string;
 }
 
-export interface SavedRoute {
-  id: string;
-  driver_label: string;
-  orders: Order[];
-  created_at: string;
-  center: {
-    lat: number;
-    lng: number;
-  };
+export interface OrderData {
+  items: string;
+  address: string;
+  neighborhood?: string;
+  preferred_date?: string;
+  client_name?: string;
+  client_phone?: string;
 }

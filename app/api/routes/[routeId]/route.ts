@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRoute } from "@/lib/routes";
+import { getRoute } from "@/lib/routes/routes.service";
 
 export async function GET(
   request: NextRequest,
