@@ -2,7 +2,7 @@ import { generateText, tool } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { saveOrder, getConversationHistory, saveMessage } from "./orders";
-import { prisma } from "./db";
+import { sql } from "./db";
 import { geocodeAddress } from "./geocoding";
 import { kapso } from "./whatsapp";
 
@@ -95,21 +95,27 @@ export async function handleMessage(
   customerPhone?: string
 ): Promise<string> {
   // For legacy Telegram bot support (single-tenant)
+  let resolvedCompanyId: string;
+  let resolvedCustomerPhone: string | undefined = customerPhone;
+
   if (!companyId) {
-    const firstCompany = await prisma.company.findFirst();
+    const [firstCompany] = await sql`SELECT * FROM companies LIMIT 1`;
     if (!firstCompany) {
       throw new Error('No company configured. Run seed script first.');
     }
-    companyId = firstCompany.id;
-    customerPhone = threadId; // Use threadId as customer identifier for legacy
+    resolvedCompanyId = firstCompany.id;
+    resolvedCustomerPhone = threadId; // Use threadId as customer identifier for legacy
+  } else {
+    resolvedCompanyId = companyId;
   }
+
   // Load agent configuration for this company
-  const agentConfig = await prisma.agentConfig.findUnique({
-    where: { companyId },
-  });
+  const [agentConfig] = await sql`
+    SELECT * FROM agent_configs WHERE company_id = ${resolvedCompanyId}
+  `;
 
   if (!agentConfig) {
-    throw new Error(`No agent configuration found for company ${companyId}`);
+    throw new Error(`No agent configuration found for company ${resolvedCompanyId}`);
   }
 
   // Build system prompt
@@ -157,10 +163,10 @@ export async function handleMessage(
           }
 
           // Send location pin to customer via WhatsApp (only for WhatsApp, not Telegram)
-          if (customerPhone) {
+          if (resolvedCustomerPhone) {
             try {
               await kapso.sendLocation({
-                to: customerPhone,
+                to: resolvedCustomerPhone,
                 latitude: result.location.lat,
                 longitude: result.location.lng,
                 name: result.formattedAddress,
@@ -209,9 +215,9 @@ export async function handleMessage(
       const orderData = JSON.parse(jsonText);
       console.log("📦 Extracted data:", orderData);
 
-      if (orderData.items && orderData.address && companyId) {
+      if (orderData.items && orderData.address) {
         console.log("✅ Saving order to database...");
-        const order = await saveOrder(orderData, threadId, companyId);
+        const order = await saveOrder(orderData, threadId, resolvedCompanyId);
         console.log("✅✅ Order saved successfully with ID:", order.id);
       } else {
         console.log("⚠️ Missing required fields:", {

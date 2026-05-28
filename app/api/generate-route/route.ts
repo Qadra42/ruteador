@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPendingOrders, markOrdersAsRouted } from "@/lib/orders";
 import { saveRouteForMap } from "@/lib/routes";
-import { prisma } from "@/lib/db";
+import { sql } from "@/lib/db";
 
 // Build Google Maps URL with waypoints (Google will optimize)
 function buildGoogleMapsUrl(orders: any[]): string {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // TODO: In Phase 3, get companyId from authenticated user session
     // For now, get the first company in the database
-    const company = await prisma.company.findFirst();
+    const [company] = await sql`SELECT * FROM companies LIMIT 1`;
 
     if (!company) {
       return NextResponse.json(

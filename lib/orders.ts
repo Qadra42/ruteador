@@ -1,8 +1,8 @@
 import { kv } from "@vercel/kv";
-import { prisma } from "./db";
+import { sql } from "./db";
 
 /**
- * Save a new order to the database (Postgres via Prisma)
+ * Save a new order to the database (Raw SQL)
  */
 export async function saveOrder(
   orderData: {
@@ -16,20 +16,33 @@ export async function saveOrder(
   customerPhone: string,
   companyId: string
 ) {
-  const order = await prisma.order.create({
-    data: {
-      companyId,
-      customerPhone,
-      customerName: orderData.client_name || null,
-      items: orderData.items,
-      address: orderData.neighborhood
-        ? `${orderData.address}, ${orderData.neighborhood}`
-        : orderData.address,
-      preferredDate: orderData.preferred_date || "lo antes posible",
-      status: "pending",
-      confirmedAt: new Date(),
-    },
-  });
+  const address = orderData.neighborhood
+    ? `${orderData.address}, ${orderData.neighborhood}`
+    : orderData.address;
+
+  const [order] = await sql`
+    INSERT INTO orders (
+      company_id,
+      customer_phone,
+      customer_name,
+      items,
+      address,
+      preferred_date,
+      status,
+      confirmed_at
+    )
+    VALUES (
+      ${companyId},
+      ${customerPhone},
+      ${orderData.client_name || null},
+      ${orderData.items},
+      ${address},
+      ${orderData.preferred_date || "lo antes posible"},
+      'pending',
+      NOW()
+    )
+    RETURNING *
+  `;
 
   return order;
 }
@@ -38,17 +51,12 @@ export async function saveOrder(
  * Get all pending orders for a company
  */
 export async function getPendingOrders(companyId: string) {
-  return await prisma.order.findMany({
-    where: {
-      companyId,
-      status: {
-        in: ["pending", "assigned"],
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  return await sql`
+    SELECT * FROM orders
+    WHERE company_id = ${companyId}
+    AND status IN ('pending', 'assigned')
+    ORDER BY created_at DESC
+  `;
 }
 
 /**
@@ -58,17 +66,11 @@ export async function markOrdersAsRouted(
   orderIds: string[],
   routeId: string
 ): Promise<void> {
-  await prisma.order.updateMany({
-    where: {
-      id: {
-        in: orderIds,
-      },
-    },
-    data: {
-      status: "assigned",
-      routeId,
-    },
-  });
+  await sql`
+    UPDATE orders
+    SET status = 'assigned', route_id = ${routeId}
+    WHERE id = ANY(${orderIds})
+  `;
 }
 
 /**

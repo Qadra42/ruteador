@@ -61,10 +61,12 @@ export class KapsoClient {
       await this.client.messages.sendLocation({
         phoneNumberId: this.phoneNumberId,
         to,
-        latitude,
-        longitude,
-        name,
-        address,
+        location: {
+          latitude,
+          longitude,
+          name,
+          address,
+        },
       });
 
       console.log('✅ WhatsApp location sent to:', to);

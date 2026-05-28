@@ -1,4 +1,4 @@
-import { prisma } from "./db";
+import { sql } from "./db";
 
 /**
  * Save a route to Postgres for map visualization
@@ -21,15 +21,23 @@ export async function saveRouteForMap(params: {
     items: o.items,
   }));
 
-  const route = await prisma.route.create({
-    data: {
-      companyId: params.companyId,
-      driverCount: params.driverCount,
-      orderIds,
-      optimizedSequence,
-      googleMapsUrl: params.googleMapsUrl || null,
-    },
-  });
+  const [route] = await sql`
+    INSERT INTO routes (
+      company_id,
+      driver_count,
+      order_ids,
+      optimized_sequence,
+      google_maps_url
+    )
+    VALUES (
+      ${params.companyId},
+      ${params.driverCount},
+      ${JSON.stringify(orderIds)},
+      ${JSON.stringify(optimizedSequence)},
+      ${params.googleMapsUrl || null}
+    )
+    RETURNING *
+  `;
 
   return route;
 }
@@ -38,10 +46,12 @@ export async function saveRouteForMap(params: {
  * Get a saved route by ID
  */
 export async function getRoute(routeId: string) {
-  return await prisma.route.findUnique({
-    where: { id: routeId },
-    include: {
-      company: true,
-    },
-  });
+  const [route] = await sql`
+    SELECT r.*, c.*
+    FROM routes r
+    JOIN companies c ON r.company_id = c.id
+    WHERE r.id = ${routeId}
+  `;
+
+  return route;
 }

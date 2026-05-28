@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleMessage } from '@/lib/agent';
 import { kapso } from '@/lib/whatsapp';
-import { prisma } from '@/lib/db';
+import { sql } from '@/lib/db';
 
 /**
  * Verifica la firma del webhook de Kapso (seguridad)
@@ -74,9 +74,20 @@ export async function POST(request: NextRequest) {
     // Identify which company owns this WhatsApp number
     const businessWhatsAppNumber = process.env.KAPSO_PHONE_NUMBER_ID;
 
-    const company = await prisma.company.findUnique({
-      where: { whatsappNumber: businessWhatsAppNumber },
-    });
+    if (!businessWhatsAppNumber) {
+      console.error('❌ KAPSO_PHONE_NUMBER_ID not configured');
+      await kapso.sendMessage({
+        to: from,
+        message: 'Lo sentimos, el servicio no está configurado correctamente. Por favor contactá al administrador.',
+      });
+      return NextResponse.json({ error: 'WhatsApp number not configured' }, { status: 500 });
+    }
+
+    const [company] = await sql`
+      SELECT * FROM companies
+      WHERE whatsapp_number = ${businessWhatsAppNumber}
+      LIMIT 1
+    `;
 
     if (!company) {
       console.error(`❌ No company found for WhatsApp: ${businessWhatsAppNumber}`);
