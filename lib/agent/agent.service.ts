@@ -3,7 +3,7 @@
  */
 
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAzure } from "@ai-sdk/azure";
 import { sql } from "../db";
 import type { AgentConfig } from "../types";
 import { saveOrder, getConversationHistory, saveMessage } from "../orders/orders.service";
@@ -64,8 +64,14 @@ export async function handleMessage(
 
   console.log("📝 History length:", history.length, "Valid:", validHistory.length);
 
+  // Initialize Azure OpenAI client
+  const azure = createAzure({
+    apiKey: process.env.AZURE_OPENAI_API_KEY,
+    resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME, // e.g., "your-resource"
+  });
+
   const { text: response } = await generateText({
-    model: anthropic("claude-sonnet-4-5-20250929"),
+    model: azure(process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4o"),
     system: systemPrompt,
     messages: validHistory,
     // TODO: Fix tool types in AI SDK 6.x

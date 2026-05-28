@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/azure": "^3.0.67",
     "@chat-adapter/state-memory": "^4.26.0",
     "@chat-adapter/telegram": "^4.26.0",
     "@googlemaps/js-api-loader": "^2.0.2",

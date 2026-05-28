@@ -3,7 +3,7 @@
  */
 
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAzure } from "@ai-sdk/azure";
 import type { OrderData, ConversationMessage } from '../types';
 
 /**
@@ -18,8 +18,14 @@ export async function extractOrderData(
   console.log("🔍 Extracting order data from:", lastMessages);
 
   try {
+    // Initialize Azure OpenAI client
+    const azure = createAzure({
+      apiKey: process.env.AZURE_OPENAI_API_KEY,
+      resourceName: process.env.AZURE_OPENAI_RESOURCE_NAME,
+    });
+
     const extractionResponse = await generateText({
-      model: anthropic("claude-sonnet-4-5-20250929"),
+      model: azure(process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4o"),
       system: `Sos un extractor de datos. Analizá la conversación y devolvé SOLO un objeto JSON válido (sin markdown, sin explicaciones) con estos campos: items, address, neighborhood, preferred_date, client_name, client_phone. Ejemplo: {"items":"heladera","address":"Rivera 1500","neighborhood":"La Comercial","preferred_date":"mañana","client_name":"Roberto","client_phone":"099123456"}`,
       prompt: lastMessages,
     });
