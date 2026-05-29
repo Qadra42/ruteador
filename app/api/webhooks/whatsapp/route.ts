@@ -49,6 +49,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: 'no message' });
     }
 
+    // Ignorar mensajes salientes (los que envía el bot)
+    if (message.kapso?.direction === 'outbound') {
+      console.log('⚠️ Ignorando mensaje saliente (outbound)');
+      return NextResponse.json({ status: 'ignored outbound message' });
+    }
+
     // Datos del mensaje
     const from = message.from; // Número del cliente (ej: "59892065628")
     const messageId = message.id;
