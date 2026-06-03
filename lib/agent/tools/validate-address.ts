@@ -69,6 +69,7 @@ export function createValidateAddressTool(
         neighborhood: result.neighborhood,
         city: result.city,
         coordinates: result.location,
+        message: `Confirmado. La dirección es: ${result.formattedAddress}${result.neighborhood ? ` (${result.neighborhood})` : ''}. Te envié un pin con la ubicación exacta.`,
       };
     },
   });

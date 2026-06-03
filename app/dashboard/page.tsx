@@ -1,16 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { GenerateRouteButton } from "./GenerateRouteButton";
 import type { Order } from "@/lib/types";
 
 type TabType = "hoy" | "mañana" | "todos";
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedTab, setSelectedTab] = useState<TabType>("hoy");
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     fetch("/api/orders")
@@ -71,12 +82,16 @@ export default function DashboardPage() {
     filteredOrders.length > 0 &&
     filteredOrders.every((o) => selectedOrders.has(o.id));
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
         <p className="text-gray-600">Loading...</p>
       </div>
     );
+  }
+
+  if (status === "unauthenticated") {
+    return null; // Will redirect in useEffect
   }
 
   return (
@@ -89,10 +104,16 @@ export default function DashboardPage() {
               ruteador
             </h1>
             <p className="text-sm text-gray-600">
-              Smart delivery routing
+              Smart delivery routing · {session?.user?.email}
             </p>
           </div>
           <div className="flex gap-3 items-center">
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg shadow-sm transition-all"
+            >
+              Logout
+            </button>
             <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200/50">
               <span className="text-lg font-bold text-gray-900">{pendingOrders.length}</span>
               <span className="text-sm text-gray-500 ml-2">{pendingOrders.length === 1 ? "order" : "orders"}</span>

@@ -147,11 +147,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`🤖 Respuesta: "${response}"`);
 
-    // Send response via WhatsApp
-    await kapso.sendMessage({
-      to: from,
-      message: response,
-    });
+    // Send response via WhatsApp (only if not empty)
+    if (response && response.trim().length > 0) {
+      await kapso.sendMessage({
+        to: from,
+        message: response,
+      });
+    } else {
+      console.log('⚠️ Empty response from agent, skipping message send');
+    }
 
     return NextResponse.json({ status: 'ok' });
   } catch (error) {
