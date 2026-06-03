@@ -7,7 +7,7 @@ Reescribir Ruteador desde cero con arquitectura production-ready para soportar m
 ## 📋 Contexto
 
 ### Proyecto actual (MVP de hackathon)
-- ✅ Funciona en Telegram
+- ✅ Funciona en WhatsApp
 - ✅ Agente conversacional toma pedidos
 - ✅ Genera rutas con Google Maps
 - ✅ Dashboard básico

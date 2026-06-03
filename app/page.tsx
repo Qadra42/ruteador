@@ -17,18 +17,10 @@ export default function HomePage() {
             <div className="flex items-start">
               <span className="text-2xl mr-3">💬</span>
               <div>
-                <h3 className="font-semibold">Clients send orders via Telegram</h3>
+                <h3 className="font-semibold">Clients send orders via WhatsApp</h3>
                 <p className="text-gray-600 text-sm">
                   The conversational agent takes orders automatically
                 </p>
-                <a
-                  href="https://t.me/ruteador_bot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  → t.me/ruteador_bot
-                </a>
               </div>
             </div>
             <div className="flex items-start">

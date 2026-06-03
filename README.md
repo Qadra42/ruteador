@@ -6,7 +6,7 @@ Built for Vercel's **"Zero to Agent"** hackathon (Track 3: ChatSDK Agents).
 
 ## 🎯 The Problem
 
-Small scrap collection businesses in Montevideo receive orders via WhatsApp/Telegram throughout the day. They manually:
+Small scrap collection businesses in Montevideo receive orders via WhatsApp throughout the day. They manually:
 - Track orders in notebooks or spreadsheets
 - Plan routes by memory or guesswork
 - Waste time and fuel with inefficient routes
@@ -17,10 +17,10 @@ Small scrap collection businesses in Montevideo receive orders via WhatsApp/Tele
 ## ✨ Features
 
 ### 🤖 Conversational AI Agent
-- Clients message a Telegram bot to request pickups
-- Claude-powered agent extracts order details through natural conversation
+- Clients message via WhatsApp to request pickups
+- AI-powered agent extracts order details through natural conversation
 - Automatically captures: items, address, preferred date, contact info
-- Speaks natural English, handles incomplete information gracefully
+- Speaks natural Spanish, handles incomplete information gracefully
 
 ### 📊 Smart Dashboard
 - Real-time view of all pending orders
@@ -37,23 +37,24 @@ Small scrap collection businesses in Montevideo receive orders via WhatsApp/Tele
 ### 🚚 Multi-Driver Support
 - Automatically split orders between 2 drivers
 - Each driver gets their own optimized route
-- Routes shared via Telegram with interactive map links
+- View routes on interactive map
 
 ## 🏗️ Tech Stack
 
 **Frontend & Backend**
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
 
 **AI & Messaging**
-- ChatSDK (Telegram adapter)
+- Kapso WhatsApp Cloud API
 - Vercel AI SDK
-- Claude Sonnet 4.5
+- Azure OpenAI (GPT-4)
 - Google Maps JavaScript API
 
 **Data & Infrastructure**
-- Vercel KV (Redis)
+- PostgreSQL (Supabase)
+- Vercel KV (Redis) for conversation history
 - Vercel hosting
 - Bun runtime
 
@@ -62,9 +63,10 @@ Small scrap collection businesses in Montevideo receive orders via WhatsApp/Tele
 ### Prerequisites
 
 - [Bun](https://bun.sh) installed
-- Telegram account
-- [Anthropic API key](https://console.anthropic.com/settings/keys)
+- [Kapso account](https://kapso.ai) for WhatsApp Business API
+- [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service) deployment
 - [Google Maps API key](https://console.cloud.google.com/)
+- [Supabase](https://supabase.com) account
 - Vercel account (for KV and deployment)
 
 ### 1. Clone and Install
@@ -75,39 +77,48 @@ cd ruteador
 bun install
 ```
 
-### 2. Set Up Telegram Bot
+### 2. Set Up WhatsApp via Kapso
 
-Create a bot with [@BotFather](https://t.me/botfather):
-```
-/newbot
-```
-Save the token you receive.
-
-Get your chat ID from [@userinfobot](https://t.me/userinfobot) (or check Vercel logs after first message).
+1. Sign up at [Kapso](https://kapso.ai)
+2. Get your WhatsApp Business API credentials
+3. Configure webhook URL (after deployment)
 
 ### 3. Configure Environment
 
 Create `.env.local`:
 
 ```bash
-TELEGRAM_BOT_TOKEN=your_bot_token
-DRIVER_TELEGRAM_CHAT_ID=your_chat_id
-ANTHROPIC_API_KEY=sk-ant-api03-...
+# WhatsApp (Kapso)
+KAPSO_API_KEY=your_api_key
+KAPSO_PHONE_NUMBER_ID=your_phone_number_id
+KAPSO_WEBHOOK_SECRET=your_webhook_secret
+KAPSO_VERIFY_TOKEN=your_verify_token
+
+# Azure OpenAI
+AZURE_OPENAI_API_KEY=your_azure_key
+AZURE_OPENAI_RESOURCE_NAME=your_resource_name
+AZURE_OPENAI_DEPLOYMENT_NAME=your_deployment_name
+
+# Google Maps
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key
 
-# For Vercel KV (run: vercel env pull .env.local)
+# Postgres (Supabase)
+POSTGRES_URL=your_postgres_connection_string
+
+# Vercel KV (run: vercel env pull .env.local)
 KV_REST_API_URL=your_kv_url
 KV_REST_API_TOKEN=your_kv_token
+KV_REST_API_READ_ONLY_TOKEN=your_kv_readonly_token
 ```
 
-### 4. Set Up Vercel KV
+### 4. Set Up Database
 
 ```bash
-# Link to Vercel project
-vercel link
+# Run database migrations
+bun db:push
 
-# Add KV storage in Vercel dashboard, then:
-vercel env pull .env.local
+# Seed initial data (company + agent config)
+bun db:seed
 ```
 
 ### 5. Run Development Server
@@ -124,27 +135,24 @@ Visit `http://localhost:3000/dashboard`
 vercel --prod
 ```
 
-Set the Telegram webhook:
-```bash
-curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://YOUR-DOMAIN.vercel.app/api/webhooks/telegram"}'
-```
+Configure the Kapso webhook in your Kapso dashboard:
+- Webhook URL: `https://YOUR-DOMAIN.vercel.app/api/webhooks/whatsapp`
+- Verify token: (same as `KAPSO_VERIFY_TOKEN` in env vars)
 
 ## 📱 How It Works
 
-### 1. Client Places Order (Telegram Bot)
+### 1. Client Places Order (WhatsApp)
 
-Client messages the bot:
+Client messages via WhatsApp:
 ```
-Hi, I have an old washing machine and fridge to get rid of.
-Address: Bv. Artigas 1234, Cordón.
-Tomorrow works. Name is Ana, phone 094 123 456.
+Hola, tengo una heladera vieja para retirar.
+Dirección: Rivera 1500, La Comercial.
+Mañana está bien. Soy Roberto, 099 123 456.
 ```
 
 The AI agent responds:
 ```
-CONFIRMED. All set Ana, we'll swing by tomorrow. Thanks!
+CONFIRMADO. Perfecto Roberto, pasamos mañana. ¡Gracias!
 ```
 
 Order is automatically saved to the database.
@@ -164,12 +172,11 @@ Click "Generate Route" and get:
 - **Google Maps link** for turn-by-turn navigation
 - Routes optimized by Google Maps Directions API
 
-### 4. Driver Receives Route
+### 4. Driver Views Route
 
-Driver gets Telegram message with:
-- List of all stops in order
-- Link to interactive map
-- Link to Google Maps for navigation
+- Access route via generated URL
+- View interactive map
+- Click "Open in Google Maps" for turn-by-turn navigation
 
 ## 🗺️ Route Optimization
 
@@ -187,7 +194,7 @@ For 2-driver mode: Orders are split evenly, then each subset is optimized indepe
 ruteador/
 ├── app/
 │   ├── api/
-│   │   ├── webhooks/telegram/     # Telegram webhook handler
+│   │   ├── webhooks/whatsapp/     # WhatsApp webhook handler
 │   │   ├── generate-route/        # Route generation & saving
 │   │   ├── routes/[routeId]/      # Fetch saved routes
 │   │   └── orders/                # Orders API
@@ -195,26 +202,30 @@ ruteador/
 │   ├── map/[routeId]/            # Interactive map page
 │   └── page.tsx                   # Landing page
 ├── lib/
-│   ├── agent.ts                   # Claude-powered conversation agent
-│   ├── bot.ts                     # ChatSDK Telegram configuration
-│   ├── orders.ts                  # Order storage (Vercel KV)
-│   ├── routes.ts                  # Route storage (Vercel KV)
-│   └── types.ts                   # TypeScript types & Zod schemas
+│   ├── agent/                     # AI agent logic
+│   │   ├── agent.service.ts       # Main message handler
+│   │   ├── order.extractor.ts     # Extract order data
+│   │   └── prompt.builder.ts      # Build system prompts
+│   ├── orders/                    # Orders domain
+│   │   ├── orders.repository.ts   # Database queries
+│   │   └── orders.service.ts      # Business logic
+│   ├── routes/                    # Routes domain
+│   │   ├── routes.repository.ts   # Database queries
+│   │   └── routes.service.ts      # Business logic
+│   ├── whatsapp.ts                # Kapso WhatsApp client
+│   ├── db.ts                      # Database connection
+│   └── types/                     # TypeScript types
 └── scripts/
-    ├── clear-db.ts                # Clear database utility
-    └── seed-demo-data.ts          # Seed demo orders
+    └── clear-db.ts                # Clear database utility
 ```
 
 ## 💡 Key Technical Decisions
 
-### Why ChatSDK?
-Simple, declarative bot framework that handles webhook complexity. Perfect for rapid prototyping.
-
-### Why Claude Sonnet 4.5?
-- Excellent at extracting structured data from natural conversation
-- Fast enough for Telegram's 60s webhook timeout
-- Understands context and handles incomplete information gracefully
-- Superior at following system instructions
+### Why Azure OpenAI?
+- Reliable, enterprise-grade API
+- Compatible with existing Azure infrastructure
+- GPT-4 provides excellent structured data extraction
+- Fast enough for WhatsApp webhook timeouts
 
 ### Why Google Maps Directions API?
 - Professional-grade route optimization
@@ -222,22 +233,28 @@ Simple, declarative bot framework that handles webhook complexity. Perfect for r
 - Familiar interface for drivers
 - More accurate than custom algorithms for small datasets
 
+### Why PostgreSQL (Supabase)?
+- Multi-tenant architecture with proper data isolation
+- Relational data model fits business domain
+- Free tier generous for MVP testing
+- Connection pooling works well with Vercel
+
 ### Why Vercel KV?
-- Zero-config Redis for serverless
-- Perfect for storing orders and conversation history
-- Fast reads/writes for real-time dashboard
+- Fast Redis for conversation history
+- Zero-config for serverless
+- Perfect for ephemeral chat data
 - No connection pooling issues
 
 ## 🚀 Future Enhancements
 
 - **Real-time GPS tracking** for drivers
 - **SMS notifications** for clients
-- **Photo uploads** of items via Telegram
+- **Photo uploads** of items via WhatsApp
 - **Route history & analytics** (avg time per stop, fuel estimates)
 - **Multi-language support** (Spanish for clients, English for dashboard)
-- **WhatsApp integration** (many clients prefer WhatsApp)
 - **Automatic geocoding** to validate addresses
 - **Route replay** to improve optimization over time
+- **Multi-company dashboard** with authentication
 
 ## 🎓 What I Learned
 
@@ -247,7 +264,7 @@ Building Route Agent taught me:
 2. **Conversation history is critical** - storing messages in KV made the agent context-aware
 3. **Simple UIs win** - dashboard has 3 clicks: filter → select → generate
 4. **Real APIs beat custom algorithms** - Google's routing is better than anything I could build
-5. **Hackathons reward demos, not perfection** - working prototype > theoretical optimization
+5. **Multi-tenant architecture from day 1** - easier to build in than retrofit later
 
 ## 📄 License
 

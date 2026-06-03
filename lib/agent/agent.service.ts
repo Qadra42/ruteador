@@ -20,7 +20,7 @@ export async function handleMessage(
   companyId?: string,
   customerPhone?: string
 ): Promise<string> {
-  // For legacy Telegram bot support (single-tenant)
+  // For single-tenant support when companyId is not provided
   let resolvedCompanyId: string;
   let resolvedCustomerPhone: string | undefined = customerPhone;
 

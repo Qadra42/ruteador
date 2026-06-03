@@ -158,31 +158,7 @@ export async function POST(request: NextRequest) {
       ];
     }
 
-    // 4. COMMENTED: Send message to driver via Telegram
-    // const driverChatId = process.env.DRIVER_TELEGRAM_CHAT_ID;
-    // const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    //
-    // if (driverChatId && botToken) {
-    //   // Send message for each route
-    //   for (const route of routes) {
-    //     const message = `🚛 *${route.driverLabel}* (${new Date().toLocaleDateString("es-UY")})\n\n${route.summary}\n\n🗺️ [Interactive Map](${route.customMapUrl})\n📍 [Google Maps Directions](${route.googleMapsUrl})`;
-    //
-    //     await fetch(
-    //       `https://api.telegram.org/bot${botToken}/sendMessage`,
-    //       {
-    //         method: "POST",
-    //         headers: { "Content-Type": "application/json" },
-    //         body: JSON.stringify({
-    //           chat_id: driverChatId,
-    //           text: message,
-    //           parse_mode: "Markdown",
-    //         }),
-    //       }
-    //     );
-    //   }
-    // }
-
-    // 5. Mark orders as "assigned" to routes
+    // 4. Mark orders as "assigned" to routes
     // Update each route's orders
     if (numDrivers === 2 && selectedOrders.length >= 2) {
       const midpoint = Math.floor(selectedOrders.length / 2);
