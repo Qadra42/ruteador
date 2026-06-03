@@ -2,24 +2,40 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleMessage } from '@/lib/agent/agent.service';
 import { kapso } from '@/lib/whatsapp';
 import { sql } from '@/lib/db';
+import crypto from 'crypto';
 
 /**
  * Verifica la firma del webhook de Kapso (seguridad)
- * Por ahora deshabilitado en testing - TODO: implementar correctamente
+ * Usa HMAC SHA256 según la doc oficial de Kapso
  */
 function verifyWebhookSignature(request: NextRequest, body: string): boolean {
-  const signature = request.headers.get('x-kapso-signature');
+  const signature = request.headers.get('x-webhook-signature');
   const secret = process.env.KAPSO_WEBHOOK_SECRET;
 
-  // Logging para debug
-  console.log('🔐 Webhook signature check:', {
-    hasSignature: !!signature,
-    hasSecret: !!secret,
-  });
+  if (!signature || !secret) {
+    console.error('❌ Missing signature or secret:', {
+      hasSignature: !!signature,
+      hasSecret: !!secret,
+    });
+    return false;
+  }
 
-  // Por ahora permitimos todos los requests (testing)
-  // TODO: Implementar verificación correcta cuando tengamos la spec de Kapso
-  return true;
+  // Crear la firma esperada usando HMAC SHA256
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+
+  // Comparación timing-safe para prevenir timing attacks
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  } catch (error) {
+    console.error('❌ Error comparing signatures:', error);
+    return false;
+  }
 }
 
 /**
