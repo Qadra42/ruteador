@@ -9,7 +9,7 @@ import type { AgentConfig } from "../types";
 import { saveOrder, getConversationHistory, saveMessage } from "../orders/orders.service";
 import { buildSystemPrompt } from "./prompt.builder";
 import { extractOrderData } from "./order.extractor";
-// import { createValidateAddressTool } from "./tools/validate-address";
+import { createValidateAddressTool } from "./tools/validate-address";
 
 /**
  * Handle incoming message with multi-tenant support
@@ -74,13 +74,12 @@ export async function handleMessage(
     model: azure(process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4.1'),
     system: systemPrompt,
     messages: validHistory,
-    // TODO: Fix tool types in AI SDK 6.x
-    // tools: {
-    //   validate_address: createValidateAddressTool(
-    //     agentConfig.service_area,
-    //     resolvedCustomerPhone
-    //   ),
-    // },
+    tools: {
+      validate_address: createValidateAddressTool(
+        agentConfig.service_area,
+        resolvedCustomerPhone
+      ),
+    },
   });
 
   console.log("🤖 Response:", response);

@@ -16,10 +16,10 @@ export function createValidateAddressTool(
 ) {
   return tool({
     description: 'Validate and geocode an address. Use this when the customer provides a street address. This will send a location pin to confirm the address with the customer.',
-    parameters: z.object({
+    inputSchema: z.object({
       address: z.string().describe('The full address provided by the customer (street + number + neighborhood if available)'),
     }),
-    execute: async ({ address }: { address: string }) => {
+    execute: async ({ address }) => {
       console.log(`🗺️ Geocoding address: "${address}"`);
 
       const result = await geocodeAddress(address, serviceArea);
