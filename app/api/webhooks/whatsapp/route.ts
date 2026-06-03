@@ -3,6 +3,7 @@ import { handleMessage } from '@/lib/agent/agent.service';
 import { kapso } from '@/lib/whatsapp';
 import { sql } from '@/lib/db';
 import crypto from 'crypto';
+import { transcribeAudio } from '@/lib/audio/whisper.service';
 
 /**
  * Verifica la firma del webhook de Kapso (seguridad)
@@ -78,20 +79,41 @@ export async function POST(request: NextRequest) {
 
     console.log(`📱 Mensaje de ${from}, tipo: ${messageType}`);
 
-    // Por ahora solo procesamos texto
-    // TODO: Audios en Fase 4 con Whisper
-    if (messageType !== 'text') {
+    let messageText: string;
+
+    // Handle different message types
+    if (messageType === 'text') {
+      messageText = message.text.body;
+      console.log(`💬 Texto: "${messageText}"`);
+    } else if (messageType === 'audio') {
+      console.log('🎤 Procesando audio...');
+      try {
+        // Get audio URL from Kapso message
+        const audioUrl = message.audio?.url;
+
+        if (!audioUrl) {
+          throw new Error('Audio URL not found in message');
+        }
+
+        // Transcribe audio to text
+        messageText = await transcribeAudio(audioUrl);
+        console.log(`✅ Audio transcrito: "${messageText}"`);
+      } catch (error) {
+        console.error('❌ Error transcribing audio:', error);
+        await kapso.sendMessage({
+          to: from,
+          message: 'Lo siento, no pude procesar el audio. Por favor intentá de nuevo o escribime un mensaje de texto.',
+        });
+        return NextResponse.json({ status: 'audio transcription failed' });
+      }
+    } else {
       console.log('⚠️ Tipo de mensaje no soportado:', messageType);
       await kapso.sendMessage({
         to: from,
-        message: 'Por ahora solo puedo procesar mensajes de texto. ¡Los audios llegarán pronto!',
+        message: 'Por ahora solo puedo procesar mensajes de texto y audios.',
       });
       return NextResponse.json({ status: 'unsupported type' });
     }
-
-    const messageText = message.text.body;
-
-    console.log(`💬 Texto: "${messageText}"`);
 
     // Identify which company owns this WhatsApp number
     const businessWhatsAppNumber = process.env.KAPSO_PHONE_NUMBER_ID;
