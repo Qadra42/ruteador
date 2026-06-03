@@ -7,6 +7,10 @@ import { z } from "zod";
 import { geocodeAddress } from '../../geocoding';
 import { kapso } from '../../whatsapp';
 
+// Cache to prevent duplicate location sends
+const recentLocationSends = new Map<string, number>();
+const DUPLICATE_THRESHOLD_MS = 5000; // 5 seconds
+
 /**
  * Create validate_address tool for the agent
  */
@@ -20,7 +24,8 @@ export function createValidateAddressTool(
       address: z.string().describe('The full address provided by the customer (street + number + neighborhood if available)'),
     }),
     execute: async ({ address }) => {
-      console.log(`🗺️ Geocoding address: "${address}"`);
+      console.log(`🗺️ [TOOL CALLED] Geocoding address: "${address}"`);
+      console.log(`📞 Customer phone: ${customerPhone}`);
 
       const result = await geocodeAddress(address, serviceArea);
 
@@ -31,20 +36,30 @@ export function createValidateAddressTool(
         };
       }
 
-      // Send location pin to customer via WhatsApp (only for WhatsApp, not Telegram)
+      // Send location pin to customer via WhatsApp
       if (customerPhone) {
-        try {
-          await kapso.sendLocation({
-            to: customerPhone,
-            latitude: result.location.lat,
-            longitude: result.location.lng,
-            name: result.formattedAddress,
-            address: result.formattedAddress,
-          });
+        const cacheKey = `${customerPhone}:${result.formattedAddress}`;
+        const lastSent = recentLocationSends.get(cacheKey);
+        const now = Date.now();
 
-          console.log(`✅ Location sent: ${result.formattedAddress}`);
-        } catch (error) {
-          console.error('❌ Error sending location:', error);
+        // Skip if we sent this exact location recently (within 5 seconds)
+        if (lastSent && (now - lastSent) < DUPLICATE_THRESHOLD_MS) {
+          console.log(`⏭️ Skipping duplicate location send (sent ${now - lastSent}ms ago)`);
+        } else {
+          try {
+            await kapso.sendLocation({
+              to: customerPhone,
+              latitude: result.location.lat,
+              longitude: result.location.lng,
+              name: result.formattedAddress,
+              address: result.formattedAddress,
+            });
+
+            recentLocationSends.set(cacheKey, now);
+            console.log(`✅ Location sent: ${result.formattedAddress}`);
+          } catch (error) {
+            console.error('❌ Error sending location:', error);
+          }
         }
       }
 
