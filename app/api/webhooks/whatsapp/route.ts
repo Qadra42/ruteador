@@ -3,7 +3,6 @@ import { handleMessage } from '@/lib/agent/agent.service';
 import { kapso } from '@/lib/whatsapp';
 import { sql } from '@/lib/db';
 import crypto from 'crypto';
-import { transcribeAudio } from '@/lib/audio/whisper.service';
 
 /**
  * Verifica la firma del webhook de Kapso (seguridad)
@@ -87,25 +86,21 @@ export async function POST(request: NextRequest) {
       console.log(`💬 Texto: "${messageText}"`);
     } else if (messageType === 'audio') {
       console.log('🎤 Procesando audio...');
-      try {
-        // Get audio URL from Kapso message
-        const audioUrl = message.audio?.url;
 
-        if (!audioUrl) {
-          throw new Error('Audio URL not found in message');
-        }
+      // Kapso provides automatic transcription
+      const transcript = message.kapso?.transcript?.text;
 
-        // Transcribe audio to text
-        messageText = await transcribeAudio(audioUrl);
-        console.log(`✅ Audio transcrito: "${messageText}"`);
-      } catch (error) {
-        console.error('❌ Error transcribing audio:', error);
+      if (!transcript) {
+        console.error('❌ No transcript available from Kapso');
         await kapso.sendMessage({
           to: from,
           message: 'Lo siento, no pude procesar el audio. Por favor intentá de nuevo o escribime un mensaje de texto.',
         });
         return NextResponse.json({ status: 'audio transcription failed' });
       }
+
+      messageText = transcript;
+      console.log(`✅ Audio transcrito por Kapso: "${messageText}"`);
     } else {
       console.log('⚠️ Tipo de mensaje no soportado:', messageType);
       await kapso.sendMessage({
